@@ -1,0 +1,23 @@
+[project]
+name = "autonomous-claude-code"
+version = "0.1.0"
+description = "A minimal harness demonstrating long-running autonomous coding with Claude Code CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Anthropic" }
+]
+dependencies = []
+
+[project.scripts]
+autonomous-agent = "autonomous_agent_demo:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+]
