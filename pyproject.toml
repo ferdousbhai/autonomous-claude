@@ -1,23 +1,44 @@
 [project]
-name = "autonomous-claude-code"
+name = "autonomous-claude"
 version = "0.1.0"
-description = "A minimal harness demonstrating long-running autonomous coding with Claude Code CLI"
+description = "Build apps autonomously with Claude Code CLI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [
-    { name = "Anthropic" }
+    { name = "Ferdous Bhai" }
 ]
-dependencies = []
+keywords = ["claude", "ai", "autonomous", "coding", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+]
+dependencies = [
+    "typer>=0.9.0",
+]
 
 [project.scripts]
-autonomous-agent = "autonomous_agent_demo:main"
+autonomous-claude = "autonomous_claude.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/ferdousbhai/autonomous-claude"
+Repository = "https://github.com/ferdousbhai/autonomous-claude"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-dev-dependencies = [
+[tool.hatch.build.targets.wheel]
+packages = ["src/autonomous_claude"]
+
+[dependency-groups]
+dev = [
     "pytest>=8.0.0",
 ]

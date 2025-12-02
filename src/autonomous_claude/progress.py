@@ -1,8 +1,8 @@
 """
-Progress Tracking Utilities
-===========================
+Progress Tracking
+=================
 
-Functions for tracking and displaying progress of the autonomous coding agent.
+Functions for tracking and displaying agent progress.
 """
 
 import json
@@ -12,9 +12,6 @@ from pathlib import Path
 def count_passing_tests(project_dir: Path) -> tuple[int, int]:
     """
     Count passing and total tests in feature_list.json.
-
-    Args:
-        project_dir: Directory containing feature_list.json
 
     Returns:
         (passing_count, total_count)
