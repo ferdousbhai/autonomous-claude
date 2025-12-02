@@ -1,10 +1,4 @@
-"""
-Claude CLI Client
-=================
-
-Wraps the Claude Code CLI for autonomous coding sessions.
-Uses your existing Claude Code subscription - no API key required.
-"""
+"""Claude Code CLI wrapper."""
 
 import re
 import shutil
@@ -12,15 +6,7 @@ import subprocess
 from pathlib import Path
 
 
-# Built-in tools
-BUILTIN_TOOLS = [
-    "Read",
-    "Write",
-    "Edit",
-    "Glob",
-    "Grep",
-    "Bash",
-]
+ALLOWED_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 
 
 def verify_claude_cli() -> str:
@@ -31,23 +17,14 @@ def verify_claude_cli() -> str:
             "Claude Code CLI not found.\n\n"
             "Install it with:\n"
             "  npm install -g @anthropic-ai/claude-code\n\n"
-            "Then authenticate with your subscription:\n"
+            "Then authenticate:\n"
             "  claude login"
         )
     return claude_path
 
 
 def suggest_project_name(description: str, timeout: int = 30) -> str:
-    """
-    Use Claude to generate a suggested project name from a description.
-
-    Args:
-        description: The app description
-        timeout: Timeout in seconds
-
-    Returns:
-        A suggested project name (kebab-case, e.g., "notes-app")
-    """
+    """Generate a kebab-case project name from description."""
     verify_claude_cli()
 
     prompt = f"""Generate a kebab-case project name for: "{description}"
@@ -69,16 +46,11 @@ Examples: notes-app, todo, budget-track"""
     name = result.stdout.strip().split('\n')[0].strip()
     name = re.sub(r'[^a-z0-9-]', '', name.lower())
     name = re.sub(r'-+', '-', name).strip('-')
-
     return name[:15] if name else "my-app"
 
 
 class ClaudeCLIClient:
-    """
-    A client that wraps the Claude Code CLI for autonomous coding sessions.
-
-    Uses `claude -p` to query Claude using your existing subscription authentication.
-    """
+    """Wrapper for Claude Code CLI sessions."""
 
     def __init__(
         self,
@@ -96,21 +68,11 @@ class ClaudeCLIClient:
         verify_claude_cli()
 
     def query(self, prompt: str) -> tuple[str, str]:
-        """
-        Send a prompt to Claude and get the response.
-
-        Args:
-            prompt: The prompt to send
-
-        Returns:
-            Tuple of (stdout, stderr) from the CLI
-        """
+        """Send a prompt and return (stdout, stderr)."""
         self.project_dir.mkdir(parents=True, exist_ok=True)
 
         cmd = [
-            "claude",
-            "--print",
-            "--dangerously-skip-permissions",
+            "claude", "--print", "--dangerously-skip-permissions",
             "-p", prompt,
             "--model", self.model,
             "--max-turns", str(self.max_turns),
@@ -119,7 +81,7 @@ class ClaudeCLIClient:
         if self.system_prompt:
             cmd.extend(["--system-prompt", self.system_prompt])
 
-        cmd.extend(["--allowedTools", ",".join(BUILTIN_TOOLS)])
+        cmd.extend(["--allowedTools", ",".join(ALLOWED_TOOLS)])
 
         result = subprocess.run(
             cmd,
@@ -128,5 +90,4 @@ class ClaudeCLIClient:
             text=True,
             timeout=self.timeout,
         )
-
         return result.stdout, result.stderr

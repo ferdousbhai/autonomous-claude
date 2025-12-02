@@ -1,9 +1,4 @@
-"""
-CLI Interface
-=============
-
-Command-line interface for autonomous-claude.
-"""
+"""CLI for autonomous-claude."""
 
 from pathlib import Path
 from typing import Optional
@@ -41,76 +36,44 @@ def main(
 
 @app.command()
 def build(
-    spec: str = typer.Argument(
-        ...,
-        help="App description (text) or path to spec file (.txt/.md)",
-    ),
-    output: Optional[Path] = typer.Option(
-        None,
-        "--output", "-o",
-        help="Output directory (default: auto-generated name)",
-    ),
-    model: str = typer.Option(
-        "claude-sonnet-4-5-20250929",
-        "--model", "-m",
-        help="Claude model to use",
-    ),
-    max_iterations: Optional[int] = typer.Option(
-        None,
-        "--max-iterations", "-n",
-        help="Maximum iterations (default: unlimited)",
-    ),
-    features: int = typer.Option(
-        50,
-        "--features", "-f",
-        help="Target number of features to generate",
-    ),
-    timeout: int = typer.Option(
-        600,
-        "--timeout", "-t",
-        help="Timeout per session in seconds",
-    ),
+    spec: str = typer.Argument(..., help="App description or path to spec file"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
+    model: str = typer.Option("claude-sonnet-4-5-20250929", "--model", "-m", help="Claude model"),
+    max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
+    timeout: int = typer.Option(600, "--timeout", "-t", help="Timeout per session (seconds)"),
 ):
-    """
-    Build an app from a description or spec file.
-
-    Examples:
-
-        autonomous-claude build "A todo app with React and SQLite"
-
-        autonomous-claude build ./my-spec.txt -o ./my-app
-
-        autonomous-claude build "Blog with markdown support" -n 5 -f 30
-    """
-    # Verify Claude CLI is available
+    """Build an app from a description or spec file."""
     try:
         verify_claude_cli()
     except RuntimeError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
 
-    # Determine if spec is a file path or description
     spec_path = Path(spec)
-    if spec_path.exists() and spec_path.is_file():
+    is_file_spec = spec_path.exists() and spec_path.is_file()
+
+    if is_file_spec:
         typer.echo(f"Reading spec from: {spec_path}")
-        app_spec = spec_path.read_text()
-        description = spec_path.stem  # Use filename for name suggestion
+        description = spec_path.stem
     else:
-        typer.echo("Generating spec from description...")
-        app_spec = create_app_spec(spec, features)
         description = spec
 
-    # Determine output directory
     if output is None:
         typer.echo("Generating project name...")
         suggested_name = suggest_project_name(description)
         project_name = typer.prompt(
-            "Project name",
+            f"Project name (Enter to accept '{suggested_name}')",
             default=suggested_name,
+            show_default=False,
         )
         output = Path(project_name)
 
-    # Run the agent
+    if is_file_spec:
+        app_spec = spec_path.read_text()
+    else:
+        typer.echo("Generating spec from description...")
+        app_spec = create_app_spec(spec)
+
     try:
         run_agent_loop(
             project_dir=output.resolve(),
@@ -126,41 +89,18 @@ def build(
 
 @app.command()
 def resume(
-    project_dir: Path = typer.Argument(
-        ...,
-        help="Project directory to resume",
-    ),
-    model: str = typer.Option(
-        "claude-sonnet-4-5-20250929",
-        "--model", "-m",
-        help="Claude model to use",
-    ),
-    max_iterations: Optional[int] = typer.Option(
-        None,
-        "--max-iterations", "-n",
-        help="Maximum iterations (default: unlimited)",
-    ),
-    timeout: int = typer.Option(
-        600,
-        "--timeout", "-t",
-        help="Timeout per session in seconds",
-    ),
+    project_dir: Path = typer.Argument(..., help="Project directory to resume"),
+    model: str = typer.Option("claude-sonnet-4-5-20250929", "--model", "-m", help="Claude model"),
+    max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
+    timeout: int = typer.Option(600, "--timeout", "-t", help="Timeout per session (seconds)"),
 ):
-    """
-    Resume building an existing project.
-
-    Example:
-
-        autonomous-claude resume ./my-app
-    """
-    # Verify Claude CLI
+    """Resume building an existing project."""
     try:
         verify_claude_cli()
     except RuntimeError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
 
-    # Check project exists
     if not project_dir.exists():
         typer.echo(f"Error: Project directory not found: {project_dir}", err=True)
         raise typer.Exit(1)

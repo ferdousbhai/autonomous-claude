@@ -1,11 +1,8 @@
-"""
-Agent Session Logic
-===================
-
-Core agent loop for running autonomous coding sessions.
-"""
+"""Agent loop for autonomous coding sessions."""
 
 import subprocess
+import sys
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -15,30 +12,53 @@ from .progress import print_session_header, print_progress_summary
 from .prompts import get_initializer_prompt, get_coding_prompt, copy_spec_to_project
 
 
-AUTO_CONTINUE_DELAY_SECONDS = 3
+SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 
-def run_session(
-    project_dir: Path,
-    model: str,
-    prompt: str,
-    timeout: int = 600,
-) -> tuple[str, str]:
-    """
-    Run a single agent session.
+def format_elapsed(seconds: int) -> str:
+    if seconds < 3600:
+        return f"{seconds // 60}:{seconds % 60:02d}"
+    return f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
 
-    Returns:
-        (status, response) where status is "continue" or "error"
-    """
-    print("Sending prompt to Claude Code CLI...\n")
 
+def run_with_spinner(func, *args, **kwargs):
+    """Run a function while showing a spinner with elapsed time."""
+    result = [None]
+    exception = [None]
+
+    def target():
+        try:
+            result[0] = func(*args, **kwargs)
+        except Exception as e:
+            exception[0] = e
+
+    thread = threading.Thread(target=target)
+    thread.start()
+
+    start_time = time.time()
+    frame_idx = 0
+
+    while thread.is_alive():
+        elapsed = int(time.time() - start_time)
+        spinner = SPINNER_FRAMES[frame_idx % len(SPINNER_FRAMES)]
+        sys.stdout.write(f"\r{spinner} Running... {format_elapsed(elapsed)}  ")
+        sys.stdout.flush()
+        frame_idx += 1
+        thread.join(timeout=0.1)
+
+    sys.stdout.write("\r" + " " * 30 + "\r")
+    sys.stdout.flush()
+
+    if exception[0]:
+        raise exception[0]
+    return result[0]
+
+
+def run_session(project_dir: Path, model: str, prompt: str, timeout: int = 600) -> tuple[str, str]:
+    """Run a single agent session. Returns (status, response)."""
     try:
-        client = ClaudeCLIClient(
-            project_dir=project_dir,
-            model=model,
-            timeout=timeout,
-        )
-        stdout, stderr = client.query(prompt)
+        client = ClaudeCLIClient(project_dir=project_dir, model=model, timeout=timeout)
+        stdout, stderr = run_with_spinner(client.query, prompt)
 
         if stdout:
             print(stdout)
@@ -52,7 +72,7 @@ def run_session(
         print(f"Session timed out ({timeout}s)")
         return "error", "timeout"
     except Exception as e:
-        print(f"Error during agent session: {e}")
+        print(f"Error: {e}")
         return "error", str(e)
 
 
@@ -63,40 +83,26 @@ def run_agent_loop(
     app_spec: Optional[str] = None,
     timeout: int = 600,
 ) -> None:
-    """
-    Run the autonomous agent loop.
-
-    Args:
-        project_dir: Directory for the project
-        model: Claude model to use
-        max_iterations: Maximum iterations (None for unlimited)
-        app_spec: App specification content (for new projects)
-        timeout: Timeout per session in seconds
-    """
+    """Run the autonomous agent loop."""
     print("\n" + "=" * 70)
     print("  AUTONOMOUS CLAUDE")
     print("=" * 70)
     print(f"\nProject: {project_dir}")
     print(f"Model: {model}")
-    print(f"Max iterations: {max_iterations or 'unlimited'}")
-    print()
+    print(f"Max iterations: {max_iterations or 'unlimited'}\n")
 
     project_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check if continuing or starting fresh
     feature_list = project_dir / "feature_list.json"
-    is_first_run = not feature_list.exists()
 
-    if is_first_run:
+    if not feature_list.exists():
         if app_spec:
             copy_spec_to_project(project_dir, app_spec)
-        print("Starting new project - initializer agent will run first")
-        print()
+        print("Starting new project - initializer agent will run first\n")
         print("=" * 70)
         print("  NOTE: First session may take 10-20+ minutes")
         print("  The agent is generating detailed test cases.")
-        print("=" * 70)
-        print()
+        print("=" * 70 + "\n")
     else:
         print("Resuming existing project")
         print_progress_summary(project_dir)
@@ -110,29 +116,28 @@ def run_agent_loop(
             print(f"\nReached max iterations ({max_iterations})")
             break
 
-        print_session_header(iteration, is_first_run)
+        needs_init = not feature_list.exists()
+        print_session_header(iteration, needs_init)
 
-        if is_first_run:
+        if needs_init:
             prompt = get_initializer_prompt()
-            is_first_run = False
         else:
             prompt = get_coding_prompt()
 
-        status, response = run_session(project_dir, model, prompt, timeout)
+        status, _ = run_session(project_dir, model, prompt, timeout)
 
         if status == "continue":
-            print(f"\nAuto-continuing in {AUTO_CONTINUE_DELAY_SECONDS}s...")
+            print("\nAuto-continuing in 3s...")
             print_progress_summary(project_dir)
-            time.sleep(AUTO_CONTINUE_DELAY_SECONDS)
-        elif status == "error":
-            print("\nSession error - retrying with fresh session...")
-            time.sleep(AUTO_CONTINUE_DELAY_SECONDS)
+            time.sleep(3)
+        else:
+            print("\nSession error - retrying...")
+            time.sleep(3)
 
         if max_iterations is None or iteration < max_iterations:
             print("\nPreparing next session...\n")
             time.sleep(1)
 
-    # Final summary
     print("\n" + "=" * 70)
     print("  COMPLETE")
     print("=" * 70)
