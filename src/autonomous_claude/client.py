@@ -6,6 +6,7 @@ Wraps the Claude Code CLI for autonomous coding sessions.
 Uses your existing Claude Code subscription - no API key required.
 """
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -34,6 +35,42 @@ def verify_claude_cli() -> str:
             "  claude login"
         )
     return claude_path
+
+
+def suggest_project_name(description: str, timeout: int = 30) -> str:
+    """
+    Use Claude to generate a suggested project name from a description.
+
+    Args:
+        description: The app description
+        timeout: Timeout in seconds
+
+    Returns:
+        A suggested project name (kebab-case, e.g., "notes-app")
+    """
+    verify_claude_cli()
+
+    prompt = f"""Generate a kebab-case project name for: "{description}"
+
+Rules:
+- Lowercase and hyphens only
+- 1-2 words, max 15 chars
+- Output ONLY the name
+
+Examples: notes-app, todo, budget-track"""
+
+    result = subprocess.run(
+        ["claude", "--print", "-p", prompt, "--model", "claude-haiku-4-5-20251001"],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+    name = result.stdout.strip().split('\n')[0].strip()
+    name = re.sub(r'[^a-z0-9-]', '', name.lower())
+    name = re.sub(r'-+', '-', name).strip('-')
+
+    return name[:15] if name else "my-app"
 
 
 class ClaudeCLIClient:

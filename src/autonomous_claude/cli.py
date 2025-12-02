@@ -12,7 +12,7 @@ import typer
 
 from . import __version__
 from .agent import run_agent_loop
-from .client import verify_claude_cli
+from .client import suggest_project_name, verify_claude_cli
 from .prompts import create_app_spec
 
 app = typer.Typer(
@@ -45,10 +45,10 @@ def build(
         ...,
         help="App description (text) or path to spec file (.txt/.md)",
     ),
-    output: Path = typer.Option(
-        Path("./output"),
+    output: Optional[Path] = typer.Option(
+        None,
         "--output", "-o",
-        help="Output directory for the project",
+        help="Output directory (default: auto-generated name)",
     ),
     model: str = typer.Option(
         "claude-sonnet-4-5-20250929",
@@ -94,9 +94,21 @@ def build(
     if spec_path.exists() and spec_path.is_file():
         typer.echo(f"Reading spec from: {spec_path}")
         app_spec = spec_path.read_text()
+        description = spec_path.stem  # Use filename for name suggestion
     else:
         typer.echo("Generating spec from description...")
         app_spec = create_app_spec(spec, features)
+        description = spec
+
+    # Determine output directory
+    if output is None:
+        typer.echo("Generating project name...")
+        suggested_name = suggest_project_name(description)
+        project_name = typer.prompt(
+            "Project name",
+            default=suggested_name,
+        )
+        output = Path(project_name)
 
     # Run the agent
     try:

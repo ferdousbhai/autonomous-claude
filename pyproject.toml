@@ -37,6 +37,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/autonomous_claude"]
+artifacts = ["*.md"]
 
 [dependency-groups]
 dev = [
