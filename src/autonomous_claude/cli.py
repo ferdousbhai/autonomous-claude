@@ -38,9 +38,9 @@ def main(
 def build(
     spec: str = typer.Argument(..., help="App description or path to spec file"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
-    model: str = typer.Option("claude-sonnet-4-5-20250929", "--model", "-m", help="Claude model"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
-    timeout: int = typer.Option(600, "--timeout", "-t", help="Timeout per session (seconds)"),
+    timeout: int = typer.Option(1800, "--timeout", "-t", help="Timeout per session (seconds)"),
 ):
     """Build an app from a description or spec file."""
     try:
@@ -90,9 +90,9 @@ def build(
 @app.command()
 def resume(
     project_dir: Path = typer.Argument(..., help="Project directory to resume"),
-    model: str = typer.Option("claude-sonnet-4-5-20250929", "--model", "-m", help="Claude model"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
-    timeout: int = typer.Option(600, "--timeout", "-t", help="Timeout per session (seconds)"),
+    timeout: int = typer.Option(1800, "--timeout", "-t", help="Timeout per session (seconds)"),
 ):
     """Resume building an existing project."""
     try:

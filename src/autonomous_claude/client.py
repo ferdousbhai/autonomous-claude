@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 
 ALLOWED_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
@@ -55,10 +56,10 @@ class ClaudeCLIClient:
     def __init__(
         self,
         project_dir: Path,
-        model: str = "claude-sonnet-4-5-20250929",
+        model: Optional[str] = None,
         system_prompt: str = "You are an expert full-stack developer building a production-quality web application.",
         max_turns: int = 1000,
-        timeout: int = 600,
+        timeout: int = 1800,
     ):
         self.project_dir = project_dir.resolve()
         self.model = model
@@ -74,9 +75,11 @@ class ClaudeCLIClient:
         cmd = [
             "claude", "--print", "--dangerously-skip-permissions",
             "-p", prompt,
-            "--model", self.model,
             "--max-turns", str(self.max_turns),
         ]
+
+        if self.model:
+            cmd.extend(["--model", self.model])
 
         if self.system_prompt:
             cmd.extend(["--system-prompt", self.system_prompt])

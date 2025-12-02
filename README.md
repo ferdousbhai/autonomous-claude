@@ -42,7 +42,7 @@ autonomous-claude build "A todo app with React and SQLite"
 autonomous-claude build ./my-app-spec.txt -o ./my-app
 
 # With options
-autonomous-claude build "Blog with markdown" -o ./blog -n 5 -f 30
+autonomous-claude build "Blog with markdown" -o ./blog -n 5
 ```
 
 ### Resume an existing project
@@ -55,11 +55,10 @@ autonomous-claude resume ./my-app
 
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--output` | `-o` | Output directory | `./output` |
-| `--model` | `-m` | Claude model | `claude-sonnet-4-5-20250929` |
+| `--output` | `-o` | Output directory | auto-generated |
+| `--model` | `-m` | Claude model | Claude Code default |
 | `--max-iterations` | `-n` | Max iterations | unlimited |
-| `--features` | `-f` | Target feature count | 50 |
-| `--timeout` | `-t` | Timeout per session (seconds) | 600 |
+| `--timeout` | `-t` | Timeout per session (seconds) | 1800 |
 
 ## How It Works
 

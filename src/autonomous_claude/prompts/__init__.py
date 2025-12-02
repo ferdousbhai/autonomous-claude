@@ -38,4 +38,3 @@ def copy_spec_to_project(project_dir: Path, spec_content: str) -> None:
     spec_file = project_dir / "app_spec.txt"
     if not spec_file.exists():
         spec_file.write_text(spec_content)
-        print(f"Created {spec_file}")
