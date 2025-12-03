@@ -5,12 +5,12 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 
 from . import __version__
 from .agent import run_agent_loop
-from .client import suggest_project_name, verify_claude_cli
-from .prompts import create_app_spec, create_task_spec
+from .client import generate_app_spec, generate_task_spec, suggest_project_name, verify_claude_cli
 
 console = Console()
 
@@ -19,35 +19,21 @@ def confirm_app_spec(app_spec: str) -> str:
     """Display the app spec and ask user to confirm or modify it."""
     while True:
         console.print()
-        console.print(Panel(app_spec, title="[bold]Generated App Spec[/bold]", border_style="cyan"))
-        console.print()
+        console.print(Panel(
+            Markdown(app_spec),
+            title="App Spec",
+            border_style="dim",
+            padding=(1, 2),
+        ))
 
-        choice = typer.prompt(
-            "Accept this spec? [y]es / [e]dit / [r]egenerate with feedback",
-            default="y",
-        ).lower().strip()
+        choice = typer.prompt("Accept?", default="y").lower().strip()
 
         if choice in ("y", "yes", ""):
             return app_spec
-        elif choice in ("e", "edit"):
-            console.print("[dim]Enter your modified spec (end with an empty line):[/dim]")
-            lines = []
-            while True:
-                line = input()
-                if line == "":
-                    break
-                lines.append(line)
-            if lines:
-                app_spec = "\n".join(lines)
-                console.print("[green]Spec updated.[/green]")
-            else:
-                console.print("[yellow]No changes made.[/yellow]")
-        elif choice in ("r", "regenerate"):
-            feedback = typer.prompt("What would you like to change or add?")
-            app_spec = create_app_spec(f"{app_spec}\n\n## Additional Requirements\n{feedback}")
-            console.print("[green]Spec regenerated with your feedback.[/green]")
         else:
-            console.print("[yellow]Please enter 'y', 'e', or 'r'.[/yellow]")
+            feedback = choice if len(choice) > 1 else typer.prompt("What needs changing?")
+            console.print("[dim]Updating spec...[/dim]")
+            app_spec = generate_app_spec(f"{app_spec}\n\n## Changes Requested\n{feedback}")
 
 app = typer.Typer(
     name="autonomous-claude",
@@ -92,26 +78,25 @@ def build(
     is_file_spec = spec_path.exists() and spec_path.is_file()
 
     if is_file_spec:
-        typer.echo(f"Reading spec from: {spec_path}")
+        console.print(f"[dim]Reading spec from:[/dim] {spec_path}")
         description = spec_path.stem
     else:
         description = spec
 
     if output is None:
-        typer.echo("Generating project name...")
+        console.print("[dim]Generating project name...[/dim]")
         suggested_name = suggest_project_name(description)
         project_name = typer.prompt(
-            f"Project name (Enter to accept '{suggested_name}')",
+            f"Project name",
             default=suggested_name,
-            show_default=False,
         )
         output = Path(project_name)
 
     if is_file_spec:
         app_spec = spec_path.read_text()
     else:
-        typer.echo("Generating spec from description...")
-        app_spec = create_app_spec(spec)
+        console.print("[dim]Generating spec...[/dim]")
+        app_spec = generate_app_spec(spec)
 
     app_spec = confirm_app_spec(app_spec)
 
@@ -156,9 +141,10 @@ def resume(
     app_spec = None
     spec_file = project_dir / "app_spec.txt"
     if not spec_file.exists():
-        typer.echo("No app_spec.txt found in project.")
+        console.print("[dim]No app_spec.txt found in project.[/dim]")
         description = typer.prompt("Briefly describe this project")
-        app_spec = create_app_spec(description)
+        console.print("[dim]Generating spec...[/dim]")
+        app_spec = generate_app_spec(description)
         app_spec = confirm_app_spec(app_spec)
 
     try:
@@ -178,31 +164,21 @@ def confirm_task_spec(task_spec: str) -> str:
     """Display the task spec and ask user to confirm or modify it."""
     while True:
         console.print()
-        console.print(Panel(task_spec, title="[bold]Task Specification[/bold]", border_style="cyan"))
-        console.print()
+        console.print(Panel(
+            Markdown(task_spec),
+            title="Task Spec",
+            border_style="dim",
+            padding=(1, 2),
+        ))
 
-        choice = typer.prompt(
-            "Accept this spec? [y]es / [e]dit",
-            default="y",
-        ).lower().strip()
+        choice = typer.prompt("Accept?", default="y").lower().strip()
 
         if choice in ("y", "yes", ""):
             return task_spec
-        elif choice in ("e", "edit"):
-            console.print("[dim]Enter your modified spec (end with an empty line):[/dim]")
-            lines = []
-            while True:
-                line = input()
-                if line == "":
-                    break
-                lines.append(line)
-            if lines:
-                task_spec = "\n".join(lines)
-                console.print("[green]Spec updated.[/green]")
-            else:
-                console.print("[yellow]No changes made.[/yellow]")
         else:
-            console.print("[yellow]Please enter 'y' or 'e'.[/yellow]")
+            feedback = choice if len(choice) > 1 else typer.prompt("What needs changing?")
+            console.print("[dim]Updating spec...[/dim]")
+            task_spec = generate_task_spec(f"{task_spec}\n\n## Changes Requested\n{feedback}")
 
 
 @app.command(name="continue")
@@ -242,14 +218,15 @@ def continue_project(
     has_feature_list = feature_list.exists()
 
     if has_feature_list:
-        typer.echo(f"Adding new tasks to existing project: {project_dir}")
+        console.print(f"[dim]Adding new tasks to:[/dim] {project_dir}")
     else:
-        typer.echo(f"Adopting existing project: {project_dir}")
+        console.print(f"[dim]Adopting project:[/dim] {project_dir}")
 
-    typer.echo(f"Task: {task}")
-    typer.echo()
+    console.print(f"[dim]Task:[/dim] {task}")
+    console.print()
 
-    task_spec = create_task_spec(task)
+    console.print("[dim]Generating task spec...[/dim]")
+    task_spec = generate_task_spec(task)
     task_spec = confirm_task_spec(task_spec)
 
     try:

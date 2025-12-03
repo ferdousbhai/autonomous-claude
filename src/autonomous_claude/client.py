@@ -1,5 +1,6 @@
 """Claude Code CLI wrapper."""
 
+import os
 import re
 import shutil
 import subprocess
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 
+FAST_MODEL = os.environ.get("AUTONOMOUS_CLAUDE_FAST_MODEL", "claude-haiku-4-5-20251001")
 ALLOWED_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 
 
@@ -38,7 +40,7 @@ Rules:
 Examples: notes-app, todo, budget-track"""
 
     result = subprocess.run(
-        ["claude", "--print", "-p", prompt, "--model", "claude-haiku-4-5-20251001"],
+        ["claude", "--print", "-p", prompt, "--model", FAST_MODEL],
         capture_output=True,
         text=True,
         timeout=timeout,
@@ -48,6 +50,101 @@ Examples: notes-app, todo, budget-track"""
     name = re.sub(r'[^a-z0-9-]', '', name.lower())
     name = re.sub(r'-+', '-', name).strip('-')
     return name[:15] if name else "my-app"
+
+
+def generate_app_spec(description: str, timeout: int = 60) -> str:
+    """Generate a detailed app spec using Claude."""
+    verify_claude_cli()
+
+    prompt = f"""Write a concise application specification for:
+
+"{description}"
+
+Format as markdown with these sections:
+# <App Name>
+
+## Overview
+One paragraph describing what this app does and who it's for.
+
+## Core Features
+- Feature 1: Brief description
+- Feature 2: Brief description
+(3-6 key features)
+
+## Tech Stack
+Recommend appropriate technologies for this type of app.
+
+Keep it focused and actionable. Output only the spec, no preamble."""
+
+    result = subprocess.run(
+        ["claude", "--print", "-p", prompt],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+    spec = result.stdout.strip()
+    if not spec:
+        return f"""# Application
+
+## Overview
+{description}
+
+## Core Features
+- Build a complete, production-quality implementation
+
+## Tech Stack
+- Choose appropriate technologies based on requirements
+"""
+    return spec
+
+
+def generate_task_spec(task: str, timeout: int = 60) -> str:
+    """Generate a task spec using Claude."""
+    verify_claude_cli()
+
+    prompt = f"""Write a concise task specification for an existing project:
+
+"{task}"
+
+Format as markdown:
+# Task: <Brief Title>
+
+## Overview
+One paragraph describing what needs to be done.
+
+## Requirements
+- Requirement 1
+- Requirement 2
+(key requirements)
+
+## Guidelines
+- Follow existing code patterns
+- Maintain backwards compatibility
+
+Keep it focused. Output only the spec, no preamble."""
+
+    result = subprocess.run(
+        ["claude", "--print", "-p", prompt],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+    spec = result.stdout.strip()
+    if not spec:
+        return f"""# Task
+
+## Overview
+{task}
+
+## Requirements
+- Complete the task as described
+
+## Guidelines
+- Follow existing code patterns
+"""
+    return spec
 
 
 class ClaudeCLIClient:
