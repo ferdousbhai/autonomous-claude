@@ -4,11 +4,50 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from rich.console import Console
+from rich.panel import Panel
 
 from . import __version__
 from .agent import run_agent_loop
 from .client import suggest_project_name, verify_claude_cli
 from .prompts import create_app_spec
+
+console = Console()
+
+
+def confirm_app_spec(app_spec: str) -> str:
+    """Display the app spec and ask user to confirm or modify it."""
+    while True:
+        console.print()
+        console.print(Panel(app_spec, title="[bold]Generated App Spec[/bold]", border_style="cyan"))
+        console.print()
+
+        choice = typer.prompt(
+            "Accept this spec? [y]es / [e]dit / [r]egenerate with feedback",
+            default="y",
+        ).lower().strip()
+
+        if choice in ("y", "yes", ""):
+            return app_spec
+        elif choice in ("e", "edit"):
+            console.print("[dim]Enter your modified spec (end with an empty line):[/dim]")
+            lines = []
+            while True:
+                line = input()
+                if line == "":
+                    break
+                lines.append(line)
+            if lines:
+                app_spec = "\n".join(lines)
+                console.print("[green]Spec updated.[/green]")
+            else:
+                console.print("[yellow]No changes made.[/yellow]")
+        elif choice in ("r", "regenerate"):
+            feedback = typer.prompt("What would you like to change or add?")
+            app_spec = create_app_spec(f"{app_spec}\n\n## Additional Requirements\n{feedback}")
+            console.print("[green]Spec regenerated with your feedback.[/green]")
+        else:
+            console.print("[yellow]Please enter 'y', 'e', or 'r'.[/yellow]")
 
 app = typer.Typer(
     name="autonomous-claude",
@@ -74,6 +113,8 @@ def build(
         typer.echo("Generating spec from description...")
         app_spec = create_app_spec(spec)
 
+    app_spec = confirm_app_spec(app_spec)
+
     try:
         run_agent_loop(
             project_dir=output.resolve(),
@@ -118,6 +159,7 @@ def resume(
         typer.echo("No app_spec.txt found in project.")
         description = typer.prompt("Briefly describe this project")
         app_spec = create_app_spec(description)
+        app_spec = confirm_app_spec(app_spec)
 
     try:
         run_agent_loop(

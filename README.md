@@ -72,15 +72,16 @@ Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to
 ```bash
 $ autonomous-claude build "A simple notes app with tags and search"
 
-======================================================================
-  AUTONOMOUS CLAUDE
-======================================================================
+╔═╗╦ ╦╔╦╗╔═╗╔╗╔╔═╗╔╦╗╔═╗╦ ╦╔═╗
+╠═╣║ ║ ║ ║ ║║║║║ ║║║║║ ║║ ║╚═╗
+╩ ╩╚═╝ ╩ ╚═╝╝╚╝╚═╝╩ ╩╚═╝╚═╝╚═╝
+     Claude Code CLI
 
-Project: /home/user/output
-Model: claude-sonnet-4-5-20250929
-Max iterations: unlimited
+  Project     /home/user/simple-notes-app
+  Model       Claude Code default
+  Iterations  unlimited
 
-Starting new project - initializer agent will run first
+Starting new project - initializer will run first
 ...
 ```
 

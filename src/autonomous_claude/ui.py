@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
@@ -35,18 +34,13 @@ def print_header(project_dir: Path, model: str | None, max_iterations: int | Non
 def print_session_header(is_initializer: bool) -> None:
     title = "INITIALIZER" if is_initializer else "CODING AGENT"
     console.print()
-    console.print(Panel(f"[bold]{title}[/bold]", style="cyan"))
+    console.print(f"[bold cyan]── {title} ──[/bold cyan]")
     console.print()
 
 
 def print_new_project_notice() -> None:
     console.print("[yellow]Starting new project - initializer will run first[/yellow]")
-    console.print()
-    console.print(Panel(
-        "[bold]First session may take 5-10 minutes[/bold]\n"
-        "[dim]The agent is generating features and project structure.[/dim]",
-        style="yellow",
-    ))
+    console.print("[dim]First session may take 5-10 minutes while generating features and project structure.[/dim]")
     console.print()
 
 
@@ -91,17 +85,23 @@ def print_feature_status(project_dir: Path) -> None:
 
     console.print()
 
+    max_len = 500
+
     if completed:
         console.print("[bold green]Completed Features[/bold green]")
         for f in completed:
-            name = f.get("feature", "Unknown")
+            name = f.get("description", "Unknown")
+            if len(name) > max_len:
+                name = name[:max_len] + "…"
             console.print(f"  [green]✓[/green] {name}")
 
     if pending:
         console.print()
         console.print("[bold yellow]Pending Features[/bold yellow]")
         for f in pending:
-            name = f.get("feature", "Unknown")
+            name = f.get("description", "Unknown")
+            if len(name) > max_len:
+                name = name[:max_len] + "…"
             console.print(f"  [dim]○[/dim] {name}")
 
 
@@ -131,8 +131,8 @@ def print_max_iterations(n: int) -> None:
 
 def print_complete(project_dir: Path) -> None:
     console.print()
-    console.print(Panel("[bold green]COMPLETE[/bold green]", style="green"))
-    console.print(f"\nProject: [bold]{project_dir}[/bold]")
+    console.print("[bold green]── COMPLETE ──[/bold green]")
+    console.print(f"Project: [bold]{project_dir}[/bold]")
     print_progress(project_dir)
     console.print()
 
