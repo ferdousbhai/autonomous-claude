@@ -6,7 +6,13 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .client import ClaudeCLIClient
-from .prompts import get_initializer_prompt, get_coding_prompt, copy_spec_to_project
+from .prompts import (
+    get_initializer_prompt,
+    get_coding_prompt,
+    get_adoption_initializer_prompt,
+    get_enhancement_initializer_prompt,
+    copy_spec_to_project,
+)
 from . import ui
 
 
@@ -124,6 +130,8 @@ def run_agent_loop(
     max_iterations: Optional[int] = None,
     app_spec: Optional[str] = None,
     timeout: int = 1800,
+    is_adoption: bool = False,
+    is_enhancement: bool = False,
 ) -> None:
     """Run the autonomous agent loop."""
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -132,10 +140,20 @@ def run_agent_loop(
 
     feature_list = project_dir / "feature_list.json"
 
+    # For enhancement mode, we need to run enhancement initializer first
+    needs_enhancement_init = is_enhancement
+
     if not feature_list.exists():
         if app_spec:
             copy_spec_to_project(project_dir, app_spec)
-        ui.print_new_project_notice()
+        if is_adoption:
+            ui.print_adoption_notice()
+        else:
+            ui.print_new_project_notice()
+    elif is_enhancement:
+        if app_spec:
+            copy_spec_to_project(project_dir, app_spec)
+        ui.print_enhancement_notice()
     else:
         ui.print_resuming(project_dir)
 
@@ -152,11 +170,17 @@ def run_agent_loop(
             break
 
         needs_init = not feature_list.exists()
-        ui.print_session_header(needs_init)
 
-        if needs_init:
-            prompt = get_initializer_prompt()
+        # Determine which prompt to use
+        if needs_enhancement_init:
+            ui.print_session_header(is_initializer=True, is_enhancement=True)
+            prompt = get_enhancement_initializer_prompt()
+            needs_enhancement_init = False  # Only run once
+        elif needs_init:
+            ui.print_session_header(is_initializer=True, is_adoption=is_adoption)
+            prompt = get_adoption_initializer_prompt() if is_adoption else get_initializer_prompt()
         else:
+            ui.print_session_header(is_initializer=False)
             prompt = get_coding_prompt()
 
         # Snapshot features before session

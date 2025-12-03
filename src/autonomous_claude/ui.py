@@ -31,8 +31,16 @@ def print_header(project_dir: Path, model: str | None, max_iterations: int | Non
     console.print()
 
 
-def print_session_header(is_initializer: bool) -> None:
-    title = "INITIALIZER" if is_initializer else "CODING AGENT"
+def print_session_header(is_initializer: bool, is_adoption: bool = False, is_enhancement: bool = False) -> None:
+    if is_initializer:
+        if is_enhancement:
+            title = "ENHANCEMENT INITIALIZER"
+        elif is_adoption:
+            title = "ADOPTION INITIALIZER"
+        else:
+            title = "INITIALIZER"
+    else:
+        title = "CODING AGENT"
     console.print()
     console.print(f"[bold cyan]── {title} ──[/bold cyan]")
     console.print()
@@ -41,6 +49,18 @@ def print_session_header(is_initializer: bool) -> None:
 def print_new_project_notice() -> None:
     console.print("[yellow]Starting new project - initializer will run first[/yellow]")
     console.print("[dim]First session may take 5-10 minutes while generating features and project structure.[/dim]")
+    console.print()
+
+
+def print_adoption_notice() -> None:
+    console.print("[yellow]Adopting existing project - analyzing codebase[/yellow]")
+    console.print("[dim]First session will analyze the project and create a feature list for the requested tasks.[/dim]")
+    console.print()
+
+
+def print_enhancement_notice() -> None:
+    console.print("[yellow]Adding new features to existing project[/yellow]")
+    console.print("[dim]First session will add new features to the feature list, then implementation begins.[/dim]")
     console.print()
 
 

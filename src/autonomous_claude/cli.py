@@ -10,7 +10,7 @@ from rich.panel import Panel
 from . import __version__
 from .agent import run_agent_loop
 from .client import suggest_project_name, verify_claude_cli
-from .prompts import create_app_spec
+from .prompts import create_app_spec, create_task_spec
 
 console = Console()
 
@@ -171,6 +171,99 @@ def resume(
         )
     except KeyboardInterrupt:
         typer.echo("\n\nInterrupted. Run this command again to continue.")
+        raise typer.Exit(0)
+
+
+def confirm_task_spec(task_spec: str) -> str:
+    """Display the task spec and ask user to confirm or modify it."""
+    while True:
+        console.print()
+        console.print(Panel(task_spec, title="[bold]Task Specification[/bold]", border_style="cyan"))
+        console.print()
+
+        choice = typer.prompt(
+            "Accept this spec? [y]es / [e]dit",
+            default="y",
+        ).lower().strip()
+
+        if choice in ("y", "yes", ""):
+            return task_spec
+        elif choice in ("e", "edit"):
+            console.print("[dim]Enter your modified spec (end with an empty line):[/dim]")
+            lines = []
+            while True:
+                line = input()
+                if line == "":
+                    break
+                lines.append(line)
+            if lines:
+                task_spec = "\n".join(lines)
+                console.print("[green]Spec updated.[/green]")
+            else:
+                console.print("[yellow]No changes made.[/yellow]")
+        else:
+            console.print("[yellow]Please enter 'y' or 'e'.[/yellow]")
+
+
+@app.command(name="continue")
+def continue_project(
+    project_dir: Path = typer.Argument(..., help="Existing project directory"),
+    task: str = typer.Argument(..., help="What to work on (feature, bug fix, enhancement)"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
+    max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
+    timeout: int = typer.Option(1800, "--timeout", "-t", help="Timeout per session (seconds)"),
+):
+    """Continue working on an existing project with new tasks.
+
+    Works with any project - whether built with this tool or not.
+
+    Examples:
+        # Adopt an existing project
+        autonomous-claude continue ./my-app "Add dark mode"
+
+        # Add new features to a project built with this tool
+        autonomous-claude continue ./my-app "Add user authentication"
+    """
+    try:
+        verify_claude_cli()
+    except RuntimeError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1)
+
+    if not project_dir.exists():
+        typer.echo(f"Error: Project directory not found: {project_dir}", err=True)
+        raise typer.Exit(1)
+
+    if not project_dir.is_dir():
+        typer.echo(f"Error: {project_dir} is not a directory", err=True)
+        raise typer.Exit(1)
+
+    feature_list = project_dir / "feature_list.json"
+    has_feature_list = feature_list.exists()
+
+    if has_feature_list:
+        typer.echo(f"Adding new tasks to existing project: {project_dir}")
+    else:
+        typer.echo(f"Adopting existing project: {project_dir}")
+
+    typer.echo(f"Task: {task}")
+    typer.echo()
+
+    task_spec = create_task_spec(task)
+    task_spec = confirm_task_spec(task_spec)
+
+    try:
+        run_agent_loop(
+            project_dir=project_dir.resolve(),
+            model=model,
+            max_iterations=max_iterations,
+            app_spec=task_spec,
+            timeout=timeout,
+            is_adoption=not has_feature_list,
+            is_enhancement=has_feature_list,
+        )
+    except KeyboardInterrupt:
+        typer.echo("\n\nInterrupted. Run 'autonomous-claude resume' to continue.")
         raise typer.Exit(0)
 
 

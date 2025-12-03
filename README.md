@@ -51,6 +51,18 @@ autonomous-claude build "Blog with markdown" -o ./blog -n 5
 autonomous-claude resume ./my-app
 ```
 
+### Continue with new features
+
+Add new features to any existing project - whether built with this tool or not:
+
+```bash
+# Adopt an external project for maintenance
+autonomous-claude continue ./existing-app "Add dark mode and fix login bug"
+
+# Add new features to a project built with this tool
+autonomous-claude continue ./my-app "Add user authentication"
+```
+
 ### Options
 
 | Option | Short | Description | Default |
@@ -62,8 +74,17 @@ autonomous-claude resume ./my-app
 
 ## How It Works
 
+### Building new projects (`build`)
 1. **Session 1 (Initializer)**: Creates `feature_list.json` with testable features
 2. **Sessions 2+ (Coding Agent)**: Implements features one by one, marking them as passing
+
+### Adopting existing projects (`continue`)
+1. **Session 1 (Adoption Initializer)**: Analyzes codebase, creates `feature_list.json` for requested tasks
+2. **Sessions 2+ (Coding Agent)**: Implements the new features
+
+### Adding features to existing projects (`continue` with `feature_list.json`)
+1. **Session 1 (Enhancement Initializer)**: Appends new features to existing `feature_list.json`
+2. **Sessions 2+ (Coding Agent)**: Implements the new features
 
 Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to stop, then `resume` to continue.
 
