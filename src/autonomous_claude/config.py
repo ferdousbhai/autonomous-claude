@@ -22,8 +22,8 @@ class Config:
     """Configuration for autonomous-claude."""
 
     # Session settings
-    timeout: int = 1800  # 30 minutes per session
-    max_turns: int = 100  # Max turns per Claude session
+    timeout: int = 18000  # 5 hours per session
+    max_turns: int = 2000  # Max turns per Claude session
     spec_timeout: int = 60  # Timeout for spec generation
 
     # Allowed tools for Claude
