@@ -7,6 +7,8 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
+from .config import get_config
+
 console = Console()
 
 LOGO = """[bold cyan]
@@ -100,12 +102,13 @@ def print_feature_status(project_dir: Path) -> None:
     if not features:
         return
 
+    config = get_config()
     completed = [f for f in features if f.get("passes")]
     pending = [f for f in features if not f.get("passes")]
 
     console.print()
 
-    max_len = 500
+    max_len = config.feature_name_max_length
 
     if completed:
         console.print("[bold green]Completed Features[/bold green]")
@@ -118,11 +121,15 @@ def print_feature_status(project_dir: Path) -> None:
     if pending:
         console.print()
         console.print("[bold yellow]Pending Features[/bold yellow]")
-        for f in pending:
+        display_limit = config.pending_display_limit
+        for f in pending[:display_limit]:
             name = f.get("description", "Unknown")
             if len(name) > max_len:
                 name = name[:max_len] + "…"
             console.print(f"  [dim]○[/dim] {name}")
+        remaining = len(pending) - display_limit
+        if remaining > 0:
+            console.print(f"  [dim]... and {remaining} more[/dim]")
 
 
 def print_progress(project_dir: Path) -> None:

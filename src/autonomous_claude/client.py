@@ -5,8 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-
-ALLOWED_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
+from .config import get_config
 
 
 def verify_claude_cli() -> str:
@@ -23,9 +22,11 @@ def verify_claude_cli() -> str:
     return claude_path
 
 
-def generate_app_spec(description: str, timeout: int = 60) -> str:
+def generate_app_spec(description: str, timeout: int | None = None) -> str:
     """Generate a detailed app spec using Claude."""
     verify_claude_cli()
+    config = get_config()
+    timeout = timeout or config.spec_timeout
 
     prompt = f"""Write a concise application specification for:
 
@@ -70,9 +71,11 @@ Keep it focused and actionable. Output only the spec, no preamble."""
     return spec
 
 
-def generate_task_spec(task: str, timeout: int = 60) -> str:
+def generate_task_spec(task: str, timeout: int | None = None) -> str:
     """Generate a task spec using Claude."""
     verify_claude_cli()
+    config = get_config()
+    timeout = timeout or config.spec_timeout
 
     prompt = f"""Write a concise task specification for an existing project:
 
@@ -126,14 +129,16 @@ class ClaudeCLIClient:
         project_dir: Path,
         model: Optional[str] = None,
         system_prompt: str = "You are an expert full-stack developer building a production-quality web application.",
-        max_turns: int = 1000,
-        timeout: int = 1800,
+        max_turns: int | None = None,
+        timeout: int | None = None,
     ):
+        config = get_config()
         self.project_dir = project_dir.resolve()
         self.model = model
         self.system_prompt = system_prompt
-        self.max_turns = max_turns
-        self.timeout = timeout
+        self.max_turns = max_turns or config.max_turns
+        self.timeout = timeout or config.timeout
+        self.allowed_tools = config.allowed_tools
         verify_claude_cli()
 
     def query(self, prompt: str) -> tuple[str, str]:
@@ -152,7 +157,7 @@ class ClaudeCLIClient:
         if self.system_prompt:
             cmd.extend(["--system-prompt", self.system_prompt])
 
-        cmd.extend(["--allowedTools", ",".join(ALLOWED_TOOLS)])
+        cmd.extend(["--allowedTools", ",".join(self.allowed_tools)])
 
         result = subprocess.run(
             cmd,
@@ -162,3 +167,55 @@ class ClaudeCLIClient:
             timeout=self.timeout,
         )
         return result.stdout, result.stderr
+
+    def query_streaming(self, prompt: str) -> tuple[str, str]:
+        """Send a prompt and stream output in real-time. Returns (stdout, stderr)."""
+        import sys
+
+        self.project_dir.mkdir(parents=True, exist_ok=True)
+
+        cmd = [
+            "claude", "--print", "--dangerously-skip-permissions",
+            "-p", prompt,
+            "--max-turns", str(self.max_turns),
+        ]
+
+        if self.model:
+            cmd.extend(["--model", self.model])
+
+        if self.system_prompt:
+            cmd.extend(["--system-prompt", self.system_prompt])
+
+        cmd.extend(["--allowedTools", ",".join(self.allowed_tools)])
+
+        process = subprocess.Popen(
+            cmd,
+            cwd=str(self.project_dir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+
+        stdout_lines = []
+        stderr_content = ""
+
+        try:
+            # Stream stdout in real-time
+            for line in iter(process.stdout.readline, ""):
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                stdout_lines.append(line)
+
+            process.wait(timeout=self.timeout)
+            stderr_content = process.stderr.read()
+
+            if stderr_content:
+                sys.stderr.write(stderr_content)
+                sys.stderr.flush()
+
+        except subprocess.TimeoutExpired:
+            process.kill()
+            raise
+
+        return "".join(stdout_lines), stderr_content

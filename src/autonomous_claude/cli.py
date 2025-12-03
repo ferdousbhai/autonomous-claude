@@ -11,6 +11,7 @@ from rich.panel import Panel
 from . import __version__
 from .agent import run_agent_loop
 from .client import generate_app_spec, generate_task_spec, verify_claude_cli
+from .config import get_config
 
 console = Console()
 
@@ -65,7 +66,8 @@ def build(
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
-    timeout: int = typer.Option(1800, "--timeout", "-t", help="Timeout per session (seconds)"),
+    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
+    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
     """Build an app from a description or spec file."""
     try:
@@ -95,13 +97,15 @@ def build(
 
     app_spec = confirm_app_spec(app_spec)
 
+    config = get_config()
     try:
         run_agent_loop(
             project_dir=output.resolve(),
             model=model,
             max_iterations=max_iterations,
             app_spec=app_spec,
-            timeout=timeout,
+            timeout=timeout or config.timeout,
+            verbose=verbose,
         )
     except KeyboardInterrupt:
         typer.echo("\n\nInterrupted. Run 'autonomous-claude resume' to continue.")
@@ -113,7 +117,8 @@ def resume(
     project_dir: Path = typer.Argument(..., help="Project directory to resume"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
-    timeout: int = typer.Option(1800, "--timeout", "-t", help="Timeout per session (seconds)"),
+    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
+    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
     """Resume building an existing project."""
     try:
@@ -142,13 +147,15 @@ def resume(
         app_spec = generate_app_spec(description)
         app_spec = confirm_app_spec(app_spec)
 
+    config = get_config()
     try:
         run_agent_loop(
             project_dir=project_dir.resolve(),
             model=model,
             max_iterations=max_iterations,
             app_spec=app_spec,
-            timeout=timeout,
+            timeout=timeout or config.timeout,
+            verbose=verbose,
         )
     except KeyboardInterrupt:
         typer.echo("\n\nInterrupted. Run this command again to continue.")
@@ -182,7 +189,8 @@ def continue_project(
     task: str = typer.Argument(..., help="What to work on (feature, bug fix, enhancement)"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
-    timeout: int = typer.Option(1800, "--timeout", "-t", help="Timeout per session (seconds)"),
+    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
+    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
     """Continue working on an existing project with new tasks.
 
@@ -224,15 +232,17 @@ def continue_project(
     task_spec = generate_task_spec(task)
     task_spec = confirm_task_spec(task_spec)
 
+    config = get_config()
     try:
         run_agent_loop(
             project_dir=project_dir.resolve(),
             model=model,
             max_iterations=max_iterations,
             app_spec=task_spec,
-            timeout=timeout,
+            timeout=timeout or config.timeout,
             is_adoption=not has_feature_list,
             is_enhancement=has_feature_list,
+            verbose=verbose,
         )
     except KeyboardInterrupt:
         typer.echo("\n\nInterrupted. Run 'autonomous-claude resume' to continue.")

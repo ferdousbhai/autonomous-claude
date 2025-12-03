@@ -2,6 +2,7 @@
 
 import json
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -14,6 +15,45 @@ from .prompts import (
     copy_spec_to_project,
 )
 from . import ui
+
+
+LOGS_DIR = ".autonomous-claude/logs"
+
+
+def get_log_path(project_dir: Path, session_type: str) -> Path:
+    """Get the log file path for a session."""
+    logs_dir = project_dir / LOGS_DIR
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return logs_dir / f"{timestamp}_{session_type}.log"
+
+
+def write_session_log(
+    log_path: Path,
+    session_type: str,
+    prompt: str,
+    stdout: str,
+    stderr: str,
+    duration_seconds: float,
+) -> None:
+    """Write session output to a log file."""
+    with open(log_path, "w") as f:
+        f.write(f"Session Type: {session_type}\n")
+        f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+        f.write(f"Duration: {duration_seconds:.1f}s\n")
+        f.write("\n" + "=" * 70 + "\n")
+        f.write("PROMPT:\n")
+        f.write("=" * 70 + "\n\n")
+        f.write(prompt)
+        f.write("\n\n" + "=" * 70 + "\n")
+        f.write("STDOUT:\n")
+        f.write("=" * 70 + "\n\n")
+        f.write(stdout or "(empty)")
+        if stderr:
+            f.write("\n\n" + "=" * 70 + "\n")
+            f.write("STDERR:\n")
+            f.write("=" * 70 + "\n\n")
+            f.write(stderr)
 
 
 def run_with_spinner(func, *args, **kwargs):
@@ -107,19 +147,43 @@ def save_features(project_dir: Path, features: list[dict]) -> None:
     feature_list.write_text(json.dumps(features, indent=2))
 
 
-def run_session(project_dir: Path, model: Optional[str], prompt: str, timeout: int = 1800) -> tuple[str, str]:
+def run_session(
+    project_dir: Path,
+    model: Optional[str],
+    prompt: str,
+    timeout: int = 1800,
+    session_type: str = "session",
+    verbose: bool = False,
+) -> tuple[str, str]:
     """Run a single agent session. Returns (status, response)."""
+    import time
+
+    log_path = get_log_path(project_dir, session_type)
+    start_time = time.time()
+
     try:
         client = ClaudeCLIClient(project_dir=project_dir, model=model, timeout=timeout)
-        stdout, stderr = run_with_spinner(client.query, prompt)
 
-        ui.print_output(stdout, stderr)
+        if verbose:
+            stdout, stderr = client.query_streaming(prompt)
+        else:
+            stdout, stderr = run_with_spinner(client.query, prompt)
+
+        duration = time.time() - start_time
+        write_session_log(log_path, session_type, prompt, stdout, stderr, duration)
+
+        if not verbose:
+            ui.print_output(stdout, stderr)
         return "continue", stdout
 
     except subprocess.TimeoutExpired:
+        duration = time.time() - start_time
+        write_session_log(log_path, session_type, prompt, "", f"TIMEOUT after {timeout}s", duration)
         ui.print_timeout(timeout)
         return "error", "timeout"
     except Exception as e:
+        duration = time.time() - start_time
+        write_session_log(log_path, session_type, prompt, "", str(e), duration)
         ui.print_error(e)
         return "error", str(e)
 
@@ -132,6 +196,7 @@ def run_agent_loop(
     timeout: int = 1800,
     is_adoption: bool = False,
     is_enhancement: bool = False,
+    verbose: bool = False,
 ) -> None:
     """Run the autonomous agent loop."""
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -171,22 +236,25 @@ def run_agent_loop(
 
         needs_init = not feature_list.exists()
 
-        # Determine which prompt to use
+        # Determine which prompt and session type to use
         if needs_enhancement_init:
             ui.print_session_header(is_initializer=True, is_enhancement=True)
             prompt = get_enhancement_initializer_prompt()
+            session_type = "enhancement_init"
             needs_enhancement_init = False  # Only run once
         elif needs_init:
             ui.print_session_header(is_initializer=True, is_adoption=is_adoption)
             prompt = get_adoption_initializer_prompt() if is_adoption else get_initializer_prompt()
+            session_type = "adoption_init" if is_adoption else "initializer"
         else:
             ui.print_session_header(is_initializer=False)
             prompt = get_coding_prompt()
+            session_type = "coding"
 
         # Snapshot features before session
         features_before = load_features(project_dir)
 
-        _, _ = run_session(project_dir, model, prompt, timeout)
+        _, _ = run_session(project_dir, model, prompt, timeout, session_type, verbose)
 
         # Validate feature_list.json wasn't tampered with
         features_after = load_features(project_dir)
