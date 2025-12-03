@@ -1,8 +1,9 @@
 """Agent loop for autonomous coding sessions."""
 
+import json
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from .client import ClaudeCLIClient
 from .prompts import get_initializer_prompt, get_coding_prompt, copy_spec_to_project
@@ -13,8 +14,8 @@ def run_with_spinner(func, *args, **kwargs):
     """Run a function while showing a spinner."""
     import threading
 
-    result = [None]
-    exception = [None]
+    result: list[Any] = [None]
+    exception: list[Optional[Exception]] = [None]
 
     def target():
         try:
@@ -32,6 +33,72 @@ def run_with_spinner(func, *args, **kwargs):
     if exception[0]:
         raise exception[0]
     return result[0]
+
+
+def is_project_complete(project_dir: Path) -> bool:
+    """Check if all features in feature_list.json are passing."""
+    feature_list = project_dir / "feature_list.json"
+    if not feature_list.exists():
+        return False
+
+    try:
+        features = json.loads(feature_list.read_text())
+        return all(f.get("passes", False) for f in features)
+    except (json.JSONDecodeError, TypeError):
+        return False
+
+
+def load_features(project_dir: Path) -> list[dict] | None:
+    """Load feature_list.json, return None if doesn't exist or invalid."""
+    feature_list = project_dir / "feature_list.json"
+    if not feature_list.exists():
+        return None
+    try:
+        return json.loads(feature_list.read_text())
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def validate_feature_changes(before: list[dict] | None, after: list[dict] | None) -> tuple[bool, str]:
+    """
+    Validate that feature_list.json changes follow the rules:
+    - Features cannot be removed
+    - Feature descriptions cannot be modified
+
+    Returns (is_valid, error_message).
+    """
+    if before is None:
+        return True, ""  # First creation is always valid
+
+    if after is None:
+        return False, "feature_list.json was deleted or corrupted"
+
+    # Build lookup by feature name
+    before_by_name = {f.get("feature", ""): f for f in before}
+    after_by_name = {f.get("feature", ""): f for f in after}
+
+    # Check for removed features
+    removed = set(before_by_name.keys()) - set(after_by_name.keys())
+    if removed:
+        return False, f"Features were removed: {removed}"
+
+    # Check each original feature
+    for name, before_feat in before_by_name.items():
+        after_feat = after_by_name.get(name)
+        if not after_feat:
+            continue  # Already caught above
+
+        # Check description wasn't modified
+        if before_feat.get("description") != after_feat.get("description"):
+            return False, f"Feature description was modified: {name}"
+
+    return True, ""
+
+
+def save_features(project_dir: Path, features: list[dict]) -> None:
+    """Save features back to feature_list.json."""
+    feature_list = project_dir / "feature_list.json"
+    feature_list.write_text(json.dumps(features, indent=2))
 
 
 def run_session(project_dir: Path, model: Optional[str], prompt: str, timeout: int = 1800) -> tuple[str, str]:
@@ -75,6 +142,9 @@ def run_agent_loop(
     iteration = 0
 
     while True:
+        if is_project_complete(project_dir):
+            break
+
         iteration += 1
 
         if max_iterations and iteration > max_iterations:
@@ -89,7 +159,19 @@ def run_agent_loop(
         else:
             prompt = get_coding_prompt()
 
-        status, _ = run_session(project_dir, model, prompt, timeout)
+        # Snapshot features before session
+        features_before = load_features(project_dir)
+
+        _, _ = run_session(project_dir, model, prompt, timeout)
+
+        # Validate feature_list.json wasn't tampered with
+        features_after = load_features(project_dir)
+        is_valid, error = validate_feature_changes(features_before, features_after)
+        if not is_valid:
+            ui.print_warning(f"Invalid feature_list.json change: {error}")
+            if features_before is not None:
+                ui.print_warning("Restoring previous feature_list.json")
+                save_features(project_dir, features_before)
 
         ui.print_progress(project_dir)
 

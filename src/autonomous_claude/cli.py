@@ -111,11 +111,20 @@ def resume(
         typer.echo("Use 'autonomous-claude build' to start a new project.", err=True)
         raise typer.Exit(1)
 
+    # Check if app_spec.txt exists, prompt for description if not
+    app_spec = None
+    spec_file = project_dir / "app_spec.txt"
+    if not spec_file.exists():
+        typer.echo("No app_spec.txt found in project.")
+        description = typer.prompt("Briefly describe this project")
+        app_spec = create_app_spec(description)
+
     try:
         run_agent_loop(
             project_dir=project_dir.resolve(),
             model=model,
             max_iterations=max_iterations,
+            app_spec=app_spec,
             timeout=timeout,
         )
     except KeyboardInterrupt:

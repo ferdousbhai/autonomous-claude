@@ -46,24 +46,35 @@ Create `init.sh` to set up the dev environment:
 - Start dev servers
 - Print access instructions
 
-### STEP 4: Initialize Git
+### STEP 4: Set Up MCP Tools (if relevant)
 
+Set up useful MCP servers based on project needs:
+
+**Web app with UI** - Browser automation for testing:
 ```bash
-git init
-git add -A
-git commit -m "Initial setup"
+claude mcp add --transport stdio puppeteer --scope project -- npx -y @modelcontextprotocol/server-puppeteer
 ```
+
+**Chrome debugging needed** - DevTools access for debugging/performance:
+```bash
+claude mcp add chrome-devtools --scope project -- npx chrome-devtools-mcp@latest
+```
+
+**Figma designs provided** - Access to Figma files for design implementation:
+```bash
+claude mcp add --transport sse figma --scope project https://mcp.figma.com/sse
+```
+
+Skip this step for CLI tools, libraries, or projects that don't need these tools.
 
 ### STEP 5: Create Project Structure
 
 Set up the basic directory structure based on the tech stack in `app_spec.txt`.
 
-### STEP 6: Begin Implementation (if time permits)
+### STEP 6: Initialize Git
 
-Start implementing the highest-priority features. Work on one at a time,
-test thoroughly, and mark `"passes": true` when complete.
-
-### Before Session Ends
-
-1. Commit all work
-2. Leave the project in a runnable state
+```bash
+git init
+git add -A
+git commit -m "Initial project setup"
+```

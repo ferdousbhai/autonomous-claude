@@ -69,6 +69,42 @@ def get_progress_stats(project_dir: Path) -> tuple[int, int]:
         return 0, 0
 
 
+def get_features(project_dir: Path) -> list[dict]:
+    """Return all features from feature_list.json."""
+    tests_file = project_dir / "feature_list.json"
+    if not tests_file.exists():
+        return []
+    try:
+        return json.loads(tests_file.read_text())
+    except (json.JSONDecodeError, IOError):
+        return []
+
+
+def print_feature_status(project_dir: Path) -> None:
+    """Print a clean list of features with their completion status."""
+    features = get_features(project_dir)
+    if not features:
+        return
+
+    completed = [f for f in features if f.get("passes")]
+    pending = [f for f in features if not f.get("passes")]
+
+    console.print()
+
+    if completed:
+        console.print("[bold green]Completed Features[/bold green]")
+        for f in completed:
+            name = f.get("feature", "Unknown")
+            console.print(f"  [green]✓[/green] {name}")
+
+    if pending:
+        console.print()
+        console.print("[bold yellow]Pending Features[/bold yellow]")
+        for f in pending:
+            name = f.get("feature", "Unknown")
+            console.print(f"  [dim]○[/dim] {name}")
+
+
 def print_progress(project_dir: Path) -> None:
     passing, total = get_progress_stats(project_dir)
     if total > 0:
@@ -84,6 +120,7 @@ def print_progress(project_dir: Path) -> None:
             style = "white"
 
         console.print(f"\n[{style}]Progress: {bar} {passing}/{total} ({pct:.1f}%)[/{style}]")
+        print_feature_status(project_dir)
     else:
         console.print("\n[dim]Progress: feature_list.json not yet created[/dim]")
 
@@ -114,6 +151,10 @@ def print_timeout(timeout: int) -> None:
 
 def print_error(e: Exception) -> None:
     console.print(f"[red]Error: {e}[/red]")
+
+
+def print_warning(message: str) -> None:
+    console.print(f"[yellow]Warning: {message}[/yellow]")
 
 
 class Spinner:
