@@ -1,14 +1,11 @@
 """Claude Code CLI wrapper."""
 
-import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
 
 
-FAST_MODEL = os.environ.get("AUTONOMOUS_CLAUDE_FAST_MODEL", "claude-haiku-4-5-20251001")
 ALLOWED_TOOLS = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 
 
@@ -24,32 +21,6 @@ def verify_claude_cli() -> str:
             "  claude login"
         )
     return claude_path
-
-
-def suggest_project_name(description: str, timeout: int = 30) -> str:
-    """Generate a kebab-case project name from description."""
-    verify_claude_cli()
-
-    prompt = f"""Generate a kebab-case project name for: "{description}"
-
-Rules:
-- Lowercase and hyphens only
-- 1-2 words, max 15 chars
-- Output ONLY the name
-
-Examples: notes-app, todo, budget-track"""
-
-    result = subprocess.run(
-        ["claude", "--print", "-p", prompt, "--model", FAST_MODEL],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
-
-    name = result.stdout.strip().split('\n')[0].strip()
-    name = re.sub(r'[^a-z0-9-]', '', name.lower())
-    name = re.sub(r'-+', '-', name).strip('-')
-    return name[:15] if name else "my-app"
 
 
 def generate_app_spec(description: str, timeout: int = 60) -> str:

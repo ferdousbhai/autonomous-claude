@@ -10,7 +10,7 @@ from rich.panel import Panel
 
 from . import __version__
 from .agent import run_agent_loop
-from .client import generate_app_spec, generate_task_spec, suggest_project_name, verify_claude_cli
+from .client import generate_app_spec, generate_task_spec, verify_claude_cli
 
 console = Console()
 
@@ -84,12 +84,7 @@ def build(
         description = spec
 
     if output is None:
-        console.print("[dim]Generating project name...[/dim]")
-        suggested_name = suggest_project_name(description)
-        project_name = typer.prompt(
-            f"Project name",
-            default=suggested_name,
-        )
+        project_name = typer.prompt("Project name")
         output = Path(project_name)
 
     if is_file_spec:
