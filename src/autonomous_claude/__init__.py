@@ -1,3 +1,8 @@
 """Autonomous Claude - Build apps autonomously with Claude Code CLI."""
 
-__version__ = "0.2.0"
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("autonomous-claude")
+except PackageNotFoundError:
+    __version__ = "0.0.0+dev"

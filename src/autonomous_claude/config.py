@@ -24,7 +24,8 @@ class Config:
     # Session settings
     timeout: int = 18000  # 5 hours per session
     max_turns: int = 2000  # Max turns per Claude session
-    spec_timeout: int = 60  # Timeout for spec generation
+    max_sessions: int = 100  # Max Claude sessions before stopping
+    spec_timeout: int = 600  # Timeout for spec generation (10 minutes)
 
     # Allowed tools for Claude
     allowed_tools: list[str] = field(
@@ -59,6 +60,8 @@ class Config:
                 config.timeout = session["timeout"]
             if "max_turns" in session:
                 config.max_turns = session["max_turns"]
+            if "max_sessions" in session:
+                config.max_sessions = session["max_sessions"]
             if "spec_timeout" in session:
                 config.spec_timeout = session["spec_timeout"]
 

@@ -19,7 +19,7 @@ LOGO = """[bold cyan]
 """
 
 
-def print_header(project_dir: Path, model: str | None, max_iterations: int | None) -> None:
+def print_header(project_dir: Path, model: str | None, max_sessions: int | None) -> None:
     console.print(LOGO)
 
     table = Table(show_header=False, box=None, padding=(0, 2))
@@ -27,7 +27,7 @@ def print_header(project_dir: Path, model: str | None, max_iterations: int | Non
     table.add_column()
     table.add_row("Project", f"[bold]{project_dir}[/bold]")
     table.add_row("Model", model or "[dim]Claude Code default[/dim]")
-    table.add_row("Iterations", str(max_iterations) if max_iterations else "[dim]unlimited[/dim]")
+    table.add_row("Sessions", str(max_sessions) if max_sessions else "[dim]unlimited[/dim]")
 
     console.print(table)
     console.print()
@@ -152,8 +152,8 @@ def print_progress(project_dir: Path) -> None:
         console.print("\n[dim]Progress: feature_list.json not yet created[/dim]")
 
 
-def print_max_iterations(n: int) -> None:
-    console.print(f"\n[yellow]Reached max iterations ({n})[/yellow]")
+def print_max_sessions(n: int) -> None:
+    console.print(f"\n[yellow]Reached max sessions ({n})[/yellow]")
 
 
 def print_complete(project_dir: Path) -> None:

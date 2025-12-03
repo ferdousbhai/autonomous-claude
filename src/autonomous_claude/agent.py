@@ -191,7 +191,7 @@ def run_session(
 def run_agent_loop(
     project_dir: Path,
     model: Optional[str] = None,
-    max_iterations: Optional[int] = None,
+    max_sessions: Optional[int] = None,
     app_spec: Optional[str] = None,
     timeout: int = 1800,
     is_adoption: bool = False,
@@ -201,7 +201,7 @@ def run_agent_loop(
     """Run the autonomous agent loop."""
     project_dir.mkdir(parents=True, exist_ok=True)
 
-    ui.print_header(project_dir, model, max_iterations)
+    ui.print_header(project_dir, model, max_sessions)
 
     feature_list = project_dir / "feature_list.json"
 
@@ -222,16 +222,16 @@ def run_agent_loop(
     else:
         ui.print_resuming(project_dir)
 
-    iteration = 0
+    session_count = 0
 
     while True:
         if is_project_complete(project_dir):
             break
 
-        iteration += 1
+        session_count += 1
 
-        if max_iterations and iteration > max_iterations:
-            ui.print_max_iterations(max_iterations)
+        if max_sessions and session_count > max_sessions:
+            ui.print_max_sessions(max_sessions)
             break
 
         needs_init = not feature_list.exists()

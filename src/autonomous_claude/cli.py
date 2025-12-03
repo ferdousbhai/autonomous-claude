@@ -65,7 +65,7 @@ def build(
     spec: str = typer.Argument(..., help="App description or path to spec file"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
-    max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
+    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
     verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
@@ -102,7 +102,7 @@ def build(
         run_agent_loop(
             project_dir=output.resolve(),
             model=model,
-            max_iterations=max_iterations,
+            max_sessions=max_sessions or config.max_sessions,
             app_spec=app_spec,
             timeout=timeout or config.timeout,
             verbose=verbose,
@@ -116,7 +116,7 @@ def build(
 def resume(
     project_dir: Path = typer.Argument(..., help="Project directory to resume"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
-    max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
+    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
     verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
@@ -152,7 +152,7 @@ def resume(
         run_agent_loop(
             project_dir=project_dir.resolve(),
             model=model,
-            max_iterations=max_iterations,
+            max_sessions=max_sessions or config.max_sessions,
             app_spec=app_spec,
             timeout=timeout or config.timeout,
             verbose=verbose,
@@ -188,7 +188,7 @@ def continue_project(
     project_dir: Path = typer.Argument(..., help="Existing project directory"),
     task: str = typer.Argument(..., help="What to work on (feature, bug fix, enhancement)"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
-    max_iterations: Optional[int] = typer.Option(None, "--max-iterations", "-n", help="Max iterations"),
+    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
     verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
@@ -237,7 +237,7 @@ def continue_project(
         run_agent_loop(
             project_dir=project_dir.resolve(),
             model=model,
-            max_iterations=max_iterations,
+            max_sessions=max_sessions or config.max_sessions,
             app_spec=task_spec,
             timeout=timeout or config.timeout,
             is_adoption=not has_feature_list,
