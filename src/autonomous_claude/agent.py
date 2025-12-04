@@ -287,4 +287,9 @@ def run_agent_loop(
 
         ui.print_session_progress(project_dir, newly_completed, duration, prev_passing, total_run_time)
 
+        # Check if user wants to stop (with timeout for keypress)
+        if ui.wait_for_stop_signal():
+            ui.print_user_stopped()
+            return
+
     ui.print_complete(project_dir, session_count, total_run_time)

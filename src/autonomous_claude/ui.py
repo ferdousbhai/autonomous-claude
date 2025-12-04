@@ -1,6 +1,10 @@
 """Rich UI components for autonomous-claude."""
 
 import json
+import select
+import sys
+import termios
+import tty
 from pathlib import Path
 
 from rich.console import Console
@@ -314,3 +318,63 @@ class Spinner:
 
     def __exit__(self, *args):
         self._progress.stop()
+
+
+def wait_for_stop_signal(timeout: float = 10.0) -> bool:
+    """
+    Wait for a keypress with timeout. Returns True if user wants to stop.
+
+    Displays a countdown prompt and waits for any key.
+    Returns True if key pressed (stop), False if timeout (continue).
+    """
+    import time
+
+    # Play terminal bell to notify user
+    sys.stdout.write("\a")
+    sys.stdout.flush()
+
+    # Check if stdin is a terminal
+    if not sys.stdin.isatty():
+        return False
+
+    # Save terminal settings
+    old_settings = termios.tcgetattr(sys.stdin)
+
+    try:
+        # Set terminal to raw mode (no echo, immediate input)
+        tty.setraw(sys.stdin.fileno())
+
+        start = time.time()
+        remaining = timeout
+
+        while remaining > 0:
+            # Show countdown (use carriage return to update in place)
+            msg = f"\r\033[K  Press any key to stop, or wait {remaining:.0f}s to continue... "
+            sys.stdout.write(msg)
+            sys.stdout.flush()
+
+            # Check for input with 1 second timeout
+            ready, _, _ = select.select([sys.stdin], [], [], min(1.0, remaining))
+
+            if ready:
+                # Key was pressed - consume it
+                sys.stdin.read(1)
+                sys.stdout.write("\r\033[K")  # Clear the line
+                sys.stdout.flush()
+                return True
+
+            remaining = timeout - (time.time() - start)
+
+        # Timeout - clear the prompt line
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
+        return False
+
+    finally:
+        # Restore terminal settings
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+
+
+def print_user_stopped() -> None:
+    """Print message when user stops via keypress."""
+    console.print("[yellow]Stopped by user. Run 'autonomous-claude resume' to continue.[/yellow]")
