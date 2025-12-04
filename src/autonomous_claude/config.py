@@ -36,6 +36,11 @@ class Config:
     pending_display_limit: int = 10  # Max pending features to show
     feature_name_max_length: int = 500  # Truncate long feature names
 
+    # Notification settings
+    notification_sound: str = "/usr/share/sounds/freedesktop/stereo/complete.oga"
+    notification_dings: int = 5  # Number of times to play the sound
+    notification_interval: float = 0.3  # Seconds between dings
+
     @classmethod
     def load(cls) -> "Config":
         """Load config from file, falling back to defaults."""
@@ -78,6 +83,16 @@ class Config:
                 config.pending_display_limit = ui["pending_display_limit"]
             if "feature_name_max_length" in ui:
                 config.feature_name_max_length = ui["feature_name_max_length"]
+
+        # Notification settings
+        if "notification" in data:
+            notif = data["notification"]
+            if "sound" in notif:
+                config.notification_sound = notif["sound"]
+            if "dings" in notif:
+                config.notification_dings = notif["dings"]
+            if "interval" in notif:
+                config.notification_interval = notif["interval"]
 
         return config
 

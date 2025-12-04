@@ -56,7 +56,7 @@ def write_session_log(
             f.write(stderr)
 
 
-def run_with_spinner(func, *args, **kwargs):
+def run_with_spinner(func, *args, label: str = "Running...", **kwargs):
     """Run a function while showing a spinner."""
     import threading
 
@@ -71,7 +71,7 @@ def run_with_spinner(func, *args, **kwargs):
 
     thread = threading.Thread(target=target)
 
-    with ui.Spinner():
+    with ui.Spinner(label):
         thread.start()
         while thread.is_alive():
             thread.join(timeout=0.1)
@@ -153,6 +153,7 @@ def run_session(
     prompt: str,
     timeout: int = 1800,
     session_type: str = "session",
+    spinner_label: str = "Running...",
     verbose: bool = False,
 ) -> tuple[str, str, float]:
     """Run a single agent session. Returns (status, response, duration_seconds)."""
@@ -167,7 +168,7 @@ def run_session(
         if verbose:
             stdout, stderr = client.query_streaming(prompt)
         else:
-            stdout, stderr = run_with_spinner(client.query, prompt)
+            stdout, stderr = run_with_spinner(client.query, prompt, label=spinner_label)
 
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, stdout, stderr, duration)
@@ -179,12 +180,12 @@ def run_session(
     except subprocess.TimeoutExpired:
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, "", f"TIMEOUT after {timeout}s", duration)
-        ui.print_timeout(timeout)
+        ui.print_timeout(timeout, duration)
         return "error", "timeout", duration
     except Exception as e:
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, "", str(e), duration)
-        ui.print_error(e)
+        ui.print_error(e, duration=duration, session_type=session_type)
         return "error", str(e), duration
 
 
@@ -237,35 +238,26 @@ def run_agent_loop(
 
         needs_init = not feature_list.exists()
 
-        # Determine which prompt and session type to use
+        # Determine which prompt, session type, and spinner label to use
         if needs_enhancement_init:
-            ui.print_session_header(
-                is_initializer=True, is_enhancement=True,
-                session_num=session_count, max_sessions=max_sessions,
-            )
             prompt = get_enhancement_initializer_prompt()
             session_type = "enhancement_init"
+            spinner_label = "Running enhancement initializer..."
             needs_enhancement_init = False  # Only run once
         elif needs_init:
-            ui.print_session_header(
-                is_initializer=True, is_adoption=is_adoption,
-                session_num=session_count, max_sessions=max_sessions,
-            )
             prompt = get_adoption_initializer_prompt() if is_adoption else get_initializer_prompt()
             session_type = "adoption_init" if is_adoption else "initializer"
+            spinner_label = "Running adoption initializer..." if is_adoption else "Running initializer..."
         else:
-            ui.print_session_header(
-                is_initializer=False,
-                session_num=session_count, max_sessions=max_sessions,
-            )
             prompt = get_coding_prompt()
             session_type = "coding"
+            spinner_label = "Running coding agent..."
 
         # Snapshot features before session
         features_before = load_features(project_dir)
         prev_passing = sum(1 for f in (features_before or []) if f.get("passes"))
 
-        _, _, duration = run_session(project_dir, model, prompt, timeout, session_type, verbose)
+        _, _, duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose)
         total_run_time += duration
 
         # Validate feature_list.json wasn't tampered with

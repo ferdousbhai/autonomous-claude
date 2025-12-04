@@ -1,9 +1,13 @@
 """Rich UI components for autonomous-claude."""
 
 import json
+import platform
 import select
+import shutil
+import subprocess
 import sys
 import termios
+import time
 import tty
 from pathlib import Path
 
@@ -12,6 +16,49 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
 from .config import get_config
+
+
+def play_notification_sound() -> None:
+    """Play notification sound with fallback to terminal bell."""
+    config = get_config()
+    sound_file = Path(config.notification_sound)
+    dings = config.notification_dings
+    interval = config.notification_interval
+
+    # Determine the audio player based on platform
+    system = platform.system()
+    player = None
+
+    if system == "Linux":
+        if shutil.which("paplay"):
+            player = "paplay"
+        elif shutil.which("aplay"):
+            player = "aplay"
+    elif system == "Darwin":  # macOS
+        if shutil.which("afplay"):
+            player = "afplay"
+
+    # Try to play sound file
+    if player and sound_file.exists():
+        try:
+            for i in range(dings):
+                subprocess.Popen(
+                    [player, str(sound_file)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                if i < dings - 1:
+                    time.sleep(interval)
+            return
+        except Exception:
+            pass
+
+    # Fallback to terminal bell
+    for i in range(dings):
+        sys.stdout.write("\a")
+        sys.stdout.flush()
+        if i < dings - 1:
+            time.sleep(interval)
 
 console = Console()
 
@@ -46,36 +93,6 @@ def print_header(project_dir: Path, model: str | None) -> None:
     table.add_row("Model", model or "[dim]Claude Code default[/dim]")
 
     console.print(table)
-    console.print()
-
-
-def print_session_header(
-    is_initializer: bool,
-    is_adoption: bool = False,
-    is_enhancement: bool = False,
-    session_num: int | None = None,
-    max_sessions: int | None = None,
-) -> None:
-    if is_initializer:
-        if is_enhancement:
-            title = "ENHANCEMENT INITIALIZER"
-        elif is_adoption:
-            title = "ADOPTION INITIALIZER"
-        else:
-            title = "INITIALIZER"
-    else:
-        title = "CODING AGENT"
-
-    # Add session counter
-    if session_num is not None:
-        if max_sessions:
-            counter = f" ({session_num}/{max_sessions})"
-        else:
-            counter = f" ({session_num})"
-        title += counter
-
-    console.print()
-    console.print(f"[bold cyan]── {title} ──[/bold cyan]")
     console.print()
 
 
@@ -243,20 +260,11 @@ def print_session_progress(
 
 
 def print_progress(project_dir: Path) -> None:
+    """Print progress bar and feature status."""
     passing, total = get_progress_stats(project_dir)
     if total > 0:
-        pct = (passing / total) * 100
-        filled = int(pct / 5)  # 20 chars total
-        bar = "█" * filled + "░" * (20 - filled)
-
-        if pct == 100:
-            style = "bold green"
-        elif pct >= 50:
-            style = "yellow"
-        else:
-            style = "white"
-
-        console.print(f"\n[{style}]Progress: {bar} {passing}/{total} ({pct:.1f}%)[/{style}]")
+        console.print()
+        print_progress_bar(project_dir)
         print_feature_status(project_dir)
 
 
@@ -289,12 +297,27 @@ def print_output(stdout: str, stderr: str) -> None:
     console.print("\n" + "─" * 70 + "\n")
 
 
-def print_timeout(timeout: int) -> None:
-    console.print(f"[red]Session timed out ({timeout}s)[/red]")
+def print_timeout(timeout: int, duration: float | None = None) -> None:
+    if duration is not None:
+        console.print(f"[red]Session timed out ({timeout}s limit, ran for {format_duration(duration)})[/red]")
+    else:
+        console.print(f"[red]Session timed out ({timeout}s)[/red]")
 
 
-def print_error(e: Exception) -> None:
-    console.print(f"[red]Error: {e}[/red]")
+def print_error(e: Exception, duration: float | None = None, session_type: str | None = None) -> None:
+    """Print error with session context."""
+    error_msg = str(e)
+
+    # Build context info
+    context_parts = []
+    if session_type:
+        context_parts.append(f"Session: {session_type}")
+    if duration is not None:
+        context_parts.append(f"Duration: {format_duration(duration)}")
+
+    console.print(f"[red]Error: {error_msg}[/red]")
+    if context_parts:
+        console.print(f"[dim]{' | '.join(context_parts)}[/dim]")
 
 
 def print_warning(message: str) -> None:
@@ -304,10 +327,13 @@ def print_warning(message: str) -> None:
 class Spinner:
     """Context manager for showing a spinner with elapsed time."""
 
+    def __init__(self, label: str = "Running..."):
+        self._label = label
+
     def __enter__(self):
         self._progress = Progress(
             SpinnerColumn(),
-            TextColumn("[bold cyan]Running...[/bold cyan]"),
+            TextColumn(f"[bold cyan]{self._label}[/bold cyan]"),
             TimeElapsedColumn(),
             console=console,
             transient=True,
@@ -327,11 +353,8 @@ def wait_for_stop_signal(timeout: float = 10.0) -> bool:
     Displays a countdown prompt and waits for any key.
     Returns True if key pressed (stop), False if timeout (continue).
     """
-    import time
-
-    # Play terminal bell to notify user
-    sys.stdout.write("\a")
-    sys.stdout.flush()
+    # Play notification sound
+    play_notification_sound()
 
     # Check if stdin is a terminal
     if not sys.stdin.isatty():
