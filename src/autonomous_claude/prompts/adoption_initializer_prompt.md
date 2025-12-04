@@ -84,27 +84,21 @@ cat package.json | grep -A 10 '"scripts"' 2>/dev/null
 ```
 
 Create `init.sh` that:
-- Installs dependencies (npm install, pip install, etc.)
+- Installs dependencies (prefer `pnpm` over npm for Node.js, `uv` for Python)
 - Starts dev servers if applicable
 - Prints access instructions
 
 If `init.sh` already exists, review it and update if needed.
 
-### STEP 5: Set Up MCP Tools (if relevant)
+### STEP 5: Set Up Puppeteer MCP (for web apps)
 
-Based on the project type, add useful MCP servers:
-
-**Web app with UI** - Browser automation for testing:
-```bash
-claude mcp add puppeteer-mcp-claude --scope project
+Add to `.mcp.json`:
+```json
+"puppeteer-mcp-claude": {
+  "command": "npx",
+  "args": ["-y", "puppeteer-mcp-claude", "serve"]
+}
 ```
-
-**Chrome debugging needed** - DevTools access:
-```bash
-claude mcp add --transport stdio chrome-devtools --scope project -- npx chrome-devtools-mcp@latest
-```
-
-Skip for CLI tools, libraries, or projects that don't need browser testing.
 
 ### STEP 6: Update Progress Notes
 

@@ -175,6 +175,11 @@ After you finish implementing and verifying:
 - Unnecessary defensive checks or try/catch blocks
 - Casting to `any` to bypass type issues (fix the types properly)
 
+**Use Established Libraries:**
+- Prefer well-maintained third-party libraries over custom implementations
+- Search the web to find the best modern libraries for common tasks (date handling, validation, HTTP requests, etc.)
+- Don't reinvent the wheel - leverage the ecosystem
+
 ---
 
 Begin by running Step 1 (Get Your Bearings).

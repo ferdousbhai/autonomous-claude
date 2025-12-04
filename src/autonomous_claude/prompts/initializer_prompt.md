@@ -42,30 +42,19 @@ They can only be marked as passing when implemented.
 ### STEP 3: Create init.sh
 
 Create `init.sh` to set up the dev environment:
-- Install dependencies
+- Install dependencies (prefer `pnpm` over npm for Node.js, `uv` for Python)
 - Start dev servers
 - Print access instructions
 
-### STEP 4: Set Up MCP Tools (if relevant)
+### STEP 4: Set Up Puppeteer MCP (for web apps)
 
-Set up useful MCP servers based on project needs:
-
-**Web app with UI** - Browser automation for testing:
-```bash
-claude mcp add puppeteer-mcp-claude --scope project
+Add to `.mcp.json`:
+```json
+"puppeteer-mcp-claude": {
+  "command": "npx",
+  "args": ["-y", "puppeteer-mcp-claude", "serve"]
+}
 ```
-
-**Chrome debugging needed** - DevTools access for debugging/performance:
-```bash
-claude mcp add --transport stdio chrome-devtools --scope project -- npx chrome-devtools-mcp@latest
-```
-
-**Figma designs provided** - Access to Figma files for design implementation:
-```bash
-claude mcp add --transport http figma --scope project https://mcp.figma.com/mcp
-```
-
-Skip this step for CLI tools, libraries, or projects that don't need these tools.
 
 ### STEP 5: Create Project Structure
 

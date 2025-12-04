@@ -191,6 +191,11 @@ def run_agent_loop(
     """Run the autonomous agent loop."""
     project_dir.mkdir(parents=True, exist_ok=True)
 
+    # Create default .mcp.json if it doesn't exist
+    mcp_json = project_dir / ".mcp.json"
+    if not mcp_json.exists():
+        mcp_json.write_text('{\n  "mcpServers": {}\n}\n')
+
     ui.print_header(project_dir, model)
 
     feature_list = project_dir / "feature_list.json"
