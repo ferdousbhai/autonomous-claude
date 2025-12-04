@@ -96,12 +96,12 @@ Based on the project type, add useful MCP servers:
 
 **Web app with UI** - Browser automation for testing:
 ```bash
-claude mcp add --transport stdio puppeteer --scope project -- npx -y @modelcontextprotocol/server-puppeteer
+claude mcp add puppeteer-mcp-claude --scope project
 ```
 
 **Chrome debugging needed** - DevTools access:
 ```bash
-claude mcp add chrome-devtools --scope project -- npx chrome-devtools-mcp@latest
+claude mcp add --transport stdio chrome-devtools --scope project -- npx chrome-devtools-mcp@latest
 ```
 
 Skip for CLI tools, libraries, or projects that don't need browser testing.

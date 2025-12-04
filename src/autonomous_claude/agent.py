@@ -257,6 +257,7 @@ def run_agent_loop(
         features_before = load_features(project_dir)
         prev_passing = sum(1 for f in (features_before or []) if f.get("passes"))
 
+        print()  # Empty line before spinner
         _, _, duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose)
         total_run_time += duration
 
