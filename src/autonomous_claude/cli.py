@@ -82,9 +82,6 @@ def build(
 
     if is_file_spec:
         console.print(f"[dim]Reading spec from:[/dim] {spec_path}")
-        description = spec_path.stem
-    else:
-        description = spec
 
     if output is None:
         project_name = typer.prompt("Project name")

@@ -277,7 +277,7 @@ def print_complete(
     total_sessions: int | None = None,
     total_run_time: float | None = None,
 ) -> None:
-    passing, total = get_progress_stats(project_dir)
+    _, total = get_progress_stats(project_dir)
 
     console.print()
     console.print("[bold green]── COMPLETE ──[/bold green]")

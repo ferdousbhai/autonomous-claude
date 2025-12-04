@@ -119,24 +119,14 @@ def validate_feature_changes(before: list[dict] | None, after: list[dict] | None
     if after is None:
         return False, "feature_list.json was deleted or corrupted"
 
-    # Build lookup by feature name
-    before_by_name = {f.get("feature", ""): f for f in before}
-    after_by_name = {f.get("feature", ""): f for f in after}
-
-    # Check for removed features
-    removed = set(before_by_name.keys()) - set(after_by_name.keys())
+    # Check for removed features (description changed = feature removed + new one added)
+    before_descriptions = {f.get("description", "") for f in before}
+    after_descriptions = {f.get("description", "") for f in after}
+    removed = before_descriptions - after_descriptions
     if removed:
-        return False, f"Features were removed: {removed}"
-
-    # Check each original feature
-    for name, before_feat in before_by_name.items():
-        after_feat = after_by_name.get(name)
-        if not after_feat:
-            continue  # Already caught above
-
-        # Check description wasn't modified
-        if before_feat.get("description") != after_feat.get("description"):
-            return False, f"Feature description was modified: {name}"
+        # Truncate long descriptions in error message
+        removed_short = {d[:80] + "..." if len(d) > 80 else d for d in removed}
+        return False, f"Features were removed or modified: {removed_short}"
 
     return True, ""
 
@@ -155,8 +145,8 @@ def run_session(
     session_type: str = "session",
     spinner_label: str = "Running...",
     verbose: bool = False,
-) -> tuple[str, str, float]:
-    """Run a single agent session. Returns (status, response, duration_seconds)."""
+) -> float:
+    """Run a single agent session. Returns duration in seconds."""
     import time
 
     log_path = get_log_path(project_dir, session_type)
@@ -175,18 +165,17 @@ def run_session(
 
         if not verbose:
             ui.print_output(stdout, stderr)
-        return "continue", stdout, duration
 
     except subprocess.TimeoutExpired:
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, "", f"TIMEOUT after {timeout}s", duration)
         ui.print_timeout(timeout, duration)
-        return "error", "timeout", duration
     except Exception as e:
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, "", str(e), duration)
         ui.print_error(e, duration=duration, session_type=session_type)
-        return "error", str(e), duration
+
+    return duration
 
 
 def run_agent_loop(
@@ -258,7 +247,7 @@ def run_agent_loop(
         prev_passing = sum(1 for f in (features_before or []) if f.get("passes"))
 
         print()  # Empty line before spinner
-        _, _, duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose)
+        duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose)
         total_run_time += duration
 
         # Validate feature_list.json wasn't tampered with
@@ -272,13 +261,17 @@ def run_agent_loop(
                 features_after = features_before  # Use restored for display
 
         # Find newly completed features
-        before_passing = {f.get("feature") for f in (features_before or []) if f.get("passes")}
+        before_passing = {f.get("description") for f in (features_before or []) if f.get("passes")}
         newly_completed = [
             f for f in (features_after or [])
-            if f.get("passes") and f.get("feature") not in before_passing
+            if f.get("passes") and f.get("description") not in before_passing
         ]
 
         ui.print_session_progress(project_dir, newly_completed, duration, prev_passing, total_run_time)
+
+        # Check completion before waiting for stop signal
+        if is_project_complete(project_dir):
+            break
 
         # Check if user wants to stop (with timeout for keypress)
         if ui.wait_for_stop_signal():
