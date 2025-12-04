@@ -150,7 +150,6 @@ Project name: apple-notes-clone
 
   Project     /home/user/apple-notes-clone
   Model       Claude Code default
-  Sessions    100
 
 Starting new project - initializer will run first
 ...

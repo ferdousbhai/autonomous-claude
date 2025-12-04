@@ -11,6 +11,19 @@ from .config import get_config
 
 console = Console()
 
+
+def format_duration(seconds: float) -> str:
+    """Format duration in human-readable form."""
+    if seconds < 60:
+        return f"{seconds:.0f}s"
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    if minutes < 60:
+        return f"{minutes}m {secs}s"
+    hours = minutes // 60
+    mins = minutes % 60
+    return f"{hours}h {mins}m"
+
 LOGO = """[bold cyan]
 ╔═╗╦ ╦╔╦╗╔═╗╔╗╔╔═╗╔╦╗╔═╗╦ ╦╔═╗
 ╠═╣║ ║ ║ ║ ║║║║║ ║║║║║ ║║ ║╚═╗
@@ -19,7 +32,7 @@ LOGO = """[bold cyan]
 """
 
 
-def print_header(project_dir: Path, model: str | None, max_sessions: int | None) -> None:
+def print_header(project_dir: Path, model: str | None) -> None:
     console.print(LOGO)
 
     table = Table(show_header=False, box=None, padding=(0, 2))
@@ -27,13 +40,18 @@ def print_header(project_dir: Path, model: str | None, max_sessions: int | None)
     table.add_column()
     table.add_row("Project", f"[bold]{project_dir}[/bold]")
     table.add_row("Model", model or "[dim]Claude Code default[/dim]")
-    table.add_row("Sessions", str(max_sessions) if max_sessions else "[dim]unlimited[/dim]")
 
     console.print(table)
     console.print()
 
 
-def print_session_header(is_initializer: bool, is_adoption: bool = False, is_enhancement: bool = False) -> None:
+def print_session_header(
+    is_initializer: bool,
+    is_adoption: bool = False,
+    is_enhancement: bool = False,
+    session_num: int | None = None,
+    max_sessions: int | None = None,
+) -> None:
     if is_initializer:
         if is_enhancement:
             title = "ENHANCEMENT INITIALIZER"
@@ -43,6 +61,15 @@ def print_session_header(is_initializer: bool, is_adoption: bool = False, is_enh
             title = "INITIALIZER"
     else:
         title = "CODING AGENT"
+
+    # Add session counter
+    if session_num is not None:
+        if max_sessions:
+            counter = f" ({session_num}/{max_sessions})"
+        else:
+            counter = f" ({session_num})"
+        title += counter
+
     console.print()
     console.print(f"[bold cyan]── {title} ──[/bold cyan]")
     console.print()
@@ -73,13 +100,13 @@ def print_resuming(project_dir: Path) -> None:
 
 def get_progress_stats(project_dir: Path) -> tuple[int, int]:
     """Return (passing_count, total_count) from feature_list.json."""
-    tests_file = project_dir / "feature_list.json"
-    if not tests_file.exists():
+    feature_list = project_dir / "feature_list.json"
+    if not feature_list.exists():
         return 0, 0
     try:
-        tests = json.loads(tests_file.read_text())
-        total = len(tests)
-        passing = sum(1 for t in tests if t.get("passes"))
+        features = json.loads(feature_list.read_text())
+        total = len(features)
+        passing = sum(1 for f in features if f.get("passes"))
         return passing, total
     except (json.JSONDecodeError, IOError):
         return 0, 0
@@ -87,11 +114,11 @@ def get_progress_stats(project_dir: Path) -> tuple[int, int]:
 
 def get_features(project_dir: Path) -> list[dict]:
     """Return all features from feature_list.json."""
-    tests_file = project_dir / "feature_list.json"
-    if not tests_file.exists():
+    feature_list = project_dir / "feature_list.json"
+    if not feature_list.exists():
         return []
     try:
-        return json.loads(tests_file.read_text())
+        return json.loads(feature_list.read_text())
     except (json.JSONDecodeError, IOError):
         return []
 
@@ -132,6 +159,85 @@ def print_feature_status(project_dir: Path) -> None:
             console.print(f"  [dim]... and {remaining} more[/dim]")
 
 
+def print_pending_features(project_dir: Path) -> None:
+    """Print only the pending features."""
+    features = get_features(project_dir)
+    if not features:
+        return
+
+    config = get_config()
+    pending = [f for f in features if not f.get("passes")]
+    max_len = config.feature_name_max_length
+
+    if pending:
+        console.print()
+        console.print("[bold yellow]Pending Features[/bold yellow]")
+        display_limit = config.pending_display_limit
+        for f in pending[:display_limit]:
+            name = f.get("description", "Unknown")
+            if len(name) > max_len:
+                name = name[:max_len] + "…"
+            console.print(f"  [dim]○[/dim] {name}")
+        remaining = len(pending) - display_limit
+        if remaining > 0:
+            console.print(f"  [dim]... and {remaining} more[/dim]")
+
+
+def print_progress_bar(project_dir: Path, prev_passing: int | None = None) -> None:
+    """Print the progress bar with optional delta."""
+    passing, total = get_progress_stats(project_dir)
+    if total > 0:
+        pct = (passing / total) * 100
+        filled = int(pct / 5)  # 20 chars total
+        bar = "█" * filled + "░" * (20 - filled)
+
+        if pct == 100:
+            style = "bold green"
+        elif pct >= 50:
+            style = "yellow"
+        else:
+            style = "white"
+
+        if prev_passing is not None and prev_passing != passing:
+            console.print(f"[{style}]Progress: {bar} {prev_passing}/{total} → {passing}/{total} ({pct:.1f}%)[/{style}]")
+        else:
+            console.print(f"[{style}]Progress: {bar} {passing}/{total} ({pct:.1f}%)[/{style}]")
+
+
+def print_session_progress(
+    project_dir: Path,
+    newly_completed: list[dict],
+    session_duration: float,
+    prev_passing: int | None = None,
+    total_run_time: float | None = None,
+) -> None:
+    """Print progress after a coding session (shows only new completions)."""
+    config = get_config()
+    max_len = config.feature_name_max_length
+
+    console.print()
+    print_progress_bar(project_dir, prev_passing)
+
+    if newly_completed:
+        console.print()
+        console.print(f"[bold green]Completed this session ({len(newly_completed)})[/bold green]")
+        for f in newly_completed:
+            name = f.get("description", "Unknown")
+            if len(name) > max_len:
+                name = name[:max_len] + "…"
+            console.print(f"  [green]✓[/green] {name}")
+    else:
+        console.print()
+        console.print("[dim]No features completed this session[/dim]")
+
+    print_pending_features(project_dir)
+    console.print()
+    if total_run_time is not None:
+        console.print(f"[dim]Session: {format_duration(session_duration)} | Total: {format_duration(total_run_time)}[/dim]")
+    else:
+        console.print(f"[dim]Session time: {format_duration(session_duration)}[/dim]")
+
+
 def print_progress(project_dir: Path) -> None:
     passing, total = get_progress_stats(project_dir)
     if total > 0:
@@ -148,19 +254,26 @@ def print_progress(project_dir: Path) -> None:
 
         console.print(f"\n[{style}]Progress: {bar} {passing}/{total} ({pct:.1f}%)[/{style}]")
         print_feature_status(project_dir)
-    else:
-        console.print("\n[dim]Progress: feature_list.json not yet created[/dim]")
 
 
 def print_max_sessions(n: int) -> None:
     console.print(f"\n[yellow]Reached max sessions ({n})[/yellow]")
 
 
-def print_complete(project_dir: Path) -> None:
+def print_complete(
+    project_dir: Path,
+    total_sessions: int | None = None,
+    total_run_time: float | None = None,
+) -> None:
+    passing, total = get_progress_stats(project_dir)
+
     console.print()
     console.print("[bold green]── COMPLETE ──[/bold green]")
-    console.print(f"Project: [bold]{project_dir}[/bold]")
-    print_progress(project_dir)
+    console.print()
+    console.print(f"[green]All {total} features implemented![/green]")
+
+    if total_sessions is not None and total_run_time is not None:
+        console.print(f"[dim]{total_sessions} sessions | {format_duration(total_run_time)} total[/dim]")
     console.print()
 
 

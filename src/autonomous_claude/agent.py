@@ -154,8 +154,8 @@ def run_session(
     timeout: int = 1800,
     session_type: str = "session",
     verbose: bool = False,
-) -> tuple[str, str]:
-    """Run a single agent session. Returns (status, response)."""
+) -> tuple[str, str, float]:
+    """Run a single agent session. Returns (status, response, duration_seconds)."""
     import time
 
     log_path = get_log_path(project_dir, session_type)
@@ -174,18 +174,18 @@ def run_session(
 
         if not verbose:
             ui.print_output(stdout, stderr)
-        return "continue", stdout
+        return "continue", stdout, duration
 
     except subprocess.TimeoutExpired:
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, "", f"TIMEOUT after {timeout}s", duration)
         ui.print_timeout(timeout)
-        return "error", "timeout"
+        return "error", "timeout", duration
     except Exception as e:
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, "", str(e), duration)
         ui.print_error(e)
-        return "error", str(e)
+        return "error", str(e), duration
 
 
 def run_agent_loop(
@@ -201,7 +201,7 @@ def run_agent_loop(
     """Run the autonomous agent loop."""
     project_dir.mkdir(parents=True, exist_ok=True)
 
-    ui.print_header(project_dir, model, max_sessions)
+    ui.print_header(project_dir, model)
 
     feature_list = project_dir / "feature_list.json"
 
@@ -223,6 +223,7 @@ def run_agent_loop(
         ui.print_resuming(project_dir)
 
     session_count = 0
+    total_run_time = 0.0
 
     while True:
         if is_project_complete(project_dir):
@@ -238,23 +239,34 @@ def run_agent_loop(
 
         # Determine which prompt and session type to use
         if needs_enhancement_init:
-            ui.print_session_header(is_initializer=True, is_enhancement=True)
+            ui.print_session_header(
+                is_initializer=True, is_enhancement=True,
+                session_num=session_count, max_sessions=max_sessions,
+            )
             prompt = get_enhancement_initializer_prompt()
             session_type = "enhancement_init"
             needs_enhancement_init = False  # Only run once
         elif needs_init:
-            ui.print_session_header(is_initializer=True, is_adoption=is_adoption)
+            ui.print_session_header(
+                is_initializer=True, is_adoption=is_adoption,
+                session_num=session_count, max_sessions=max_sessions,
+            )
             prompt = get_adoption_initializer_prompt() if is_adoption else get_initializer_prompt()
             session_type = "adoption_init" if is_adoption else "initializer"
         else:
-            ui.print_session_header(is_initializer=False)
+            ui.print_session_header(
+                is_initializer=False,
+                session_num=session_count, max_sessions=max_sessions,
+            )
             prompt = get_coding_prompt()
             session_type = "coding"
 
         # Snapshot features before session
         features_before = load_features(project_dir)
+        prev_passing = sum(1 for f in (features_before or []) if f.get("passes"))
 
-        _, _ = run_session(project_dir, model, prompt, timeout, session_type, verbose)
+        _, _, duration = run_session(project_dir, model, prompt, timeout, session_type, verbose)
+        total_run_time += duration
 
         # Validate feature_list.json wasn't tampered with
         features_after = load_features(project_dir)
@@ -264,7 +276,15 @@ def run_agent_loop(
             if features_before is not None:
                 ui.print_warning("Restoring previous feature_list.json")
                 save_features(project_dir, features_before)
+                features_after = features_before  # Use restored for display
 
-        ui.print_progress(project_dir)
+        # Find newly completed features
+        before_passing = {f.get("feature") for f in (features_before or []) if f.get("passes")}
+        newly_completed = [
+            f for f in (features_after or [])
+            if f.get("passes") and f.get("feature") not in before_passing
+        ]
 
-    ui.print_complete(project_dir)
+        ui.print_session_progress(project_dir, newly_completed, duration, prev_passing, total_run_time)
+
+    ui.print_complete(project_dir, session_count, total_run_time)
