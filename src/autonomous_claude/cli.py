@@ -1,5 +1,6 @@
 """CLI for autonomous-claude."""
 
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -221,6 +222,17 @@ def continue_project(
     has_feature_list = feature_list.exists()
 
     if has_feature_list:
+        # Check for incomplete features and warn user
+        features = json.loads(feature_list.read_text())
+        incomplete = [f for f in features if not f.get("passes", False)]
+
+        if incomplete:
+            console.print(f"[yellow]Warning:[/yellow] This project has {len(incomplete)} incomplete feature(s).")
+            console.print("[dim]Use 'resume' to continue without adding new features.[/dim]")
+            if not typer.confirm("Proceed with adding new features?", default=False):
+                console.print(f"[dim]Run:[/dim] autonomous-claude resume {project_dir}")
+                raise typer.Exit(0)
+
         console.print(f"[dim]Adding new tasks to:[/dim] {project_dir}")
     else:
         console.print(f"[dim]Adopting project:[/dim] {project_dir}")
