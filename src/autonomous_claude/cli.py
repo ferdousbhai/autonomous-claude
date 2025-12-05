@@ -63,8 +63,8 @@ def main(
 
 @app.command()
 def build(
-    spec: str = typer.Argument(..., help="App description or path to spec file"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output directory"),
+    project_dir: Optional[Path] = typer.Argument(None, help="Project directory"),
+    spec: Optional[str] = typer.Argument(None, help="App description or path to spec file"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
@@ -77,15 +77,18 @@ def build(
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
 
+    if project_dir is None:
+        project_name = typer.prompt("Project name")
+        project_dir = Path(project_name)
+
+    if spec is None:
+        spec = typer.prompt("Describe what you want to build")
+
     spec_path = Path(spec)
     is_file_spec = spec_path.exists() and spec_path.is_file()
 
     if is_file_spec:
         console.print(f"[dim]Reading spec from:[/dim] {spec_path}")
-
-    if output is None:
-        project_name = typer.prompt("Project name")
-        output = Path(project_name)
 
     if is_file_spec:
         app_spec = spec_path.read_text()
@@ -98,7 +101,7 @@ def build(
     config = get_config()
     try:
         run_agent_loop(
-            project_dir=output.resolve(),
+            project_dir=project_dir.resolve(),
             model=model,
             max_sessions=max_sessions or config.max_sessions,
             app_spec=app_spec,
@@ -112,7 +115,7 @@ def build(
 
 @app.command()
 def resume(
-    project_dir: Path = typer.Argument(..., help="Project directory to resume"),
+    project_dir: Optional[Path] = typer.Argument(None, help="Project directory to resume"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
@@ -124,6 +127,10 @@ def resume(
     except RuntimeError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
+
+    if project_dir is None:
+        project_path = typer.prompt("Project directory")
+        project_dir = Path(project_path)
 
     if not project_dir.exists():
         typer.echo(f"Error: Project directory not found: {project_dir}", err=True)
@@ -183,8 +190,8 @@ def confirm_task_spec(task_spec: str) -> str:
 
 @app.command(name="continue")
 def continue_project(
-    project_dir: Path = typer.Argument(..., help="Existing project directory"),
-    task: str = typer.Argument(..., help="What to work on (feature, bug fix, enhancement)"),
+    project_dir: Optional[Path] = typer.Argument(None, help="Existing project directory"),
+    task: Optional[str] = typer.Argument(None, help="What to work on (feature, bug fix, enhancement)"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
@@ -206,6 +213,10 @@ def continue_project(
     except RuntimeError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
+
+    if project_dir is None:
+        project_path = typer.prompt("Project directory")
+        project_dir = Path(project_path)
 
     if not project_dir.exists():
         typer.echo(f"Error: Project directory not found: {project_dir}", err=True)
@@ -233,6 +244,9 @@ def continue_project(
         console.print(f"[dim]Adding new tasks to:[/dim] {project_dir}")
     else:
         console.print(f"[dim]Adopting project:[/dim] {project_dir}")
+
+    if task is None:
+        task = typer.prompt("What do you want to work on")
 
     console.print(f"[dim]Task:[/dim] {task}")
     console.print()

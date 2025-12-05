@@ -247,9 +247,6 @@ def print_session_progress(
             if len(name) > max_len:
                 name = name[:max_len] + "…"
             console.print(f"  [green]✓[/green] {name}")
-    else:
-        console.print()
-        console.print("[dim]No features completed this session[/dim]")
 
     print_pending_features(project_dir)
     console.print()
