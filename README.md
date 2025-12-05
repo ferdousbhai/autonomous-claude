@@ -32,6 +32,14 @@ claude login
 
 ## Usage
 
+```
+build [PROJECT_DIR] [SPEC]     Build from description or spec file
+resume [PROJECT_DIR]           Continue existing project
+continue [PROJECT_DIR] [TASK]  Add new features to any project
+```
+
+All positional arguments are optional — prompts interactively if not provided.
+
 ### Build a new app
 
 ```bash
