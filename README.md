@@ -35,14 +35,14 @@ claude login
 ### Build a new app
 
 ```bash
-# From a description
-autonomous-claude build "An Apple Notes clone as a web app - uses local directory structure and .md files for storage, supports folders, rich text editing, and search"
+# Interactive - prompts for project name and description
+autonomous-claude build
+
+# With arguments
+autonomous-claude build ./notes-app "An Apple Notes clone - local .md storage, folders, rich text, search"
 
 # From a spec file
-autonomous-claude build ./app-spec.md -o ./notes-app
-
-# With options
-autonomous-claude build "Markdown notes app with folder organization" -o ./notes -n 50
+autonomous-claude build ./notes-app ./app-spec.md
 ```
 
 ### Resume an existing project
@@ -51,6 +51,9 @@ Continue implementing existing features where you left off:
 
 ```bash
 autonomous-claude resume ./notes-app
+
+# Or interactive
+autonomous-claude resume
 ```
 
 ### Continue with new features
@@ -60,6 +63,9 @@ Add **new** features to any existing project - whether built with this tool or n
 > **Note:** If your project has incomplete features, you'll be asked to confirm. Use `resume` to continue without adding new features.
 
 ```bash
+# Interactive
+autonomous-claude continue
+
 # Adopt an external project for maintenance
 autonomous-claude continue ./my-nextjs-app "Add dark mode toggle and fix the sidebar collapse bug"
 
@@ -71,7 +77,6 @@ autonomous-claude continue ./notes-app "Add note sharing via public links and re
 
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
-| `--output` | `-o` | Output directory | prompted |
 | `--model` | `-m` | Claude model | Claude Code default |
 | `--max-sessions` | `-n` | Max sessions (Claude Code invocations) | 100 |
 | `--timeout` | `-t` | Timeout per session (seconds) | 18000 (5 hours) |
