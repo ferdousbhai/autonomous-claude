@@ -29,12 +29,11 @@ class Config:
 
     # Allowed tools for Claude
     allowed_tools: list[str] = field(
-        default_factory=lambda: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
+        default_factory=lambda: ["Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"]
     )
 
     # UI settings
     pending_display_limit: int = 10  # Max pending features to show
-    feature_name_max_length: int = 500  # Truncate long feature names
 
     # Notification settings
     notification_sound: str = "/usr/share/sounds/freedesktop/stereo/complete.oga"
@@ -81,8 +80,6 @@ class Config:
             ui = data["ui"]
             if "pending_display_limit" in ui:
                 config.pending_display_limit = ui["pending_display_limit"]
-            if "feature_name_max_length" in ui:
-                config.feature_name_max_length = ui["feature_name_max_length"]
 
         # Notification settings
         if "notification" in data:

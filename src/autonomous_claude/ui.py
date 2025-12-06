@@ -17,6 +17,9 @@ from rich.table import Table
 
 from .config import get_config
 
+# UI constants
+FEATURE_NAME_MAX_LENGTH = 500
+
 
 def play_notification_sound() -> None:
     """Play notification sound with fallback to terminal bell."""
@@ -156,14 +159,12 @@ def print_feature_status(project_dir: Path) -> None:
 
     console.print()
 
-    max_len = config.feature_name_max_length
-
     if completed:
         console.print("[bold green]Completed Features[/bold green]")
         for f in completed:
             name = f.get("description", "Unknown")
-            if len(name) > max_len:
-                name = name[:max_len] + "…"
+            if len(name) > FEATURE_NAME_MAX_LENGTH:
+                name = name[:FEATURE_NAME_MAX_LENGTH] + "…"
             console.print(f"  [green]✓[/green] {name}")
 
     if pending:
@@ -172,8 +173,8 @@ def print_feature_status(project_dir: Path) -> None:
         display_limit = config.pending_display_limit
         for f in pending[:display_limit]:
             name = f.get("description", "Unknown")
-            if len(name) > max_len:
-                name = name[:max_len] + "…"
+            if len(name) > FEATURE_NAME_MAX_LENGTH:
+                name = name[:FEATURE_NAME_MAX_LENGTH] + "…"
             console.print(f"  [dim]○[/dim] {name}")
         remaining = len(pending) - display_limit
         if remaining > 0:
@@ -188,7 +189,6 @@ def print_pending_features(project_dir: Path) -> None:
 
     config = get_config()
     pending = [f for f in features if not f.get("passes")]
-    max_len = config.feature_name_max_length
 
     if pending:
         console.print()
@@ -196,8 +196,8 @@ def print_pending_features(project_dir: Path) -> None:
         display_limit = config.pending_display_limit
         for f in pending[:display_limit]:
             name = f.get("description", "Unknown")
-            if len(name) > max_len:
-                name = name[:max_len] + "…"
+            if len(name) > FEATURE_NAME_MAX_LENGTH:
+                name = name[:FEATURE_NAME_MAX_LENGTH] + "…"
             console.print(f"  [dim]○[/dim] {name}")
         remaining = len(pending) - display_limit
         if remaining > 0:
@@ -233,9 +233,6 @@ def print_session_progress(
     total_run_time: float | None = None,
 ) -> None:
     """Print progress after a coding session (shows only new completions)."""
-    config = get_config()
-    max_len = config.feature_name_max_length
-
     console.print()
     print_progress_bar(project_dir, prev_passing)
 
@@ -244,8 +241,8 @@ def print_session_progress(
         console.print(f"[bold green]Completed this session ({len(newly_completed)})[/bold green]")
         for f in newly_completed:
             name = f.get("description", "Unknown")
-            if len(name) > max_len:
-                name = name[:max_len] + "…"
+            if len(name) > FEATURE_NAME_MAX_LENGTH:
+                name = name[:FEATURE_NAME_MAX_LENGTH] + "…"
             console.print(f"  [green]✓[/green] {name}")
 
     print_pending_features(project_dir)

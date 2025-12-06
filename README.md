@@ -102,11 +102,10 @@ max_sessions = 100     # Max Claude sessions before stopping
 spec_timeout = 600     # Timeout for spec generation (10 minutes)
 
 [tools]
-allowed = ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
+allowed = ["Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"]
 
 [ui]
 pending_display_limit = 10     # Max pending features to show
-feature_name_max_length = 500  # Truncate long feature names
 ```
 
 ### Spec Confirmation
@@ -153,8 +152,7 @@ Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to
 ## Example
 
 ```bash
-$ autonomous-claude build "An Apple Notes clone - web app with local .md file storage, folder organization, rich text editing, and full-text search"
-Project name: apple-notes-clone
+$ autonomous-claude build ./apple-notes-clone "An Apple Notes clone - web app with local .md file storage, folder organization, rich text editing, and full-text search"
 
 ╔═╗╦ ╦╔╦╗╔═╗╔╗╔╔═╗╔╦╗╔═╗╦ ╦╔═╗
 ╠═╣║ ║ ║ ║ ║║║║║ ║║║║║ ║║ ║╚═╗
