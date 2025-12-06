@@ -288,6 +288,10 @@ def print_output(stdout: str, stderr: str) -> None:
         console.print(stdout)
     if stderr:
         console.print(f"\n[red][stderr]: {stderr}[/red]")
+
+
+def print_separator() -> None:
+    """Print a horizontal separator line between sessions."""
     console.print("\n" + "─" * 70 + "\n")
 
 

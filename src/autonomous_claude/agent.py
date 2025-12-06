@@ -273,6 +273,7 @@ def run_agent_loop(
         ]
 
         ui.print_session_progress(project_dir, newly_completed, duration, prev_passing, total_run_time)
+        ui.print_separator()
 
         # Check completion before waiting for stop signal
         if is_project_complete(project_dir):
