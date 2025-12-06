@@ -7,7 +7,19 @@ Your job is to set up the foundation for all future coding agents.
 
 Read `app_spec.txt` in your working directory. This contains the requirements.
 
-### STEP 2: Create feature_list.json
+### STEP 2: Verify External Service Authentication (CRITICAL)
+
+Based on the tech stack in `app_spec.txt`, identify any external services that require CLI authentication (e.g., Modal, Convex, Firebase, Supabase, Vercel, AWS, etc.).
+
+**For each required service:**
+1. Check if the CLI tool is installed
+2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
+3. If NOT authenticated, run the appropriate setup/login command
+4. Document any services that couldn't be authenticated in `claude-progress.txt`
+
+**IMPORTANT:** Do not proceed with project setup if critical services are not authenticated. Report the issue clearly so the user can resolve it.
+
+### STEP 3: Create feature_list.json
 
 Create `feature_list.json` with testable features based on the spec's complexity.
 Use your judgment: a simple app might need 20-30 features, a complex one might need 100+.
@@ -39,14 +51,14 @@ Use your judgment: a simple app might need 20-30 features, a complex one might n
 **Important:** Features in this file should never be removed or modified in future sessions.
 They can only be marked as passing when implemented.
 
-### STEP 3: Create init.sh
+### STEP 4: Create init.sh
 
 Create `init.sh` to set up the dev environment:
 - Install dependencies (prefer `pnpm` over npm for Node.js, `uv` for Python)
 - Start dev servers
 - Print access instructions
 
-### STEP 4: Set Up Puppeteer MCP (for web apps)
+### STEP 5: Set Up Puppeteer MCP (for web apps)
 
 Add to `.mcp.json`:
 ```json
@@ -56,11 +68,11 @@ Add to `.mcp.json`:
 }
 ```
 
-### STEP 5: Create Project Structure
+### STEP 6: Create Project Structure
 
 Set up the basic directory structure based on the tech stack in `app_spec.txt`.
 
-### STEP 6: Initialize Git
+### STEP 7: Initialize Git
 
 ```bash
 git init

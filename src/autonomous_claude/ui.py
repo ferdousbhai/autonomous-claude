@@ -228,12 +228,15 @@ def print_progress_bar(project_dir: Path, prev_passing: int | None = None) -> No
 def print_session_progress(
     project_dir: Path,
     newly_completed: list[dict],
-    session_duration: float,
     prev_passing: int | None = None,
+    session_duration: float | None = None,
     total_run_time: float | None = None,
 ) -> None:
     """Print progress after a coding session (shows only new completions)."""
     console.print()
+    if session_duration is not None and total_run_time is not None:
+        console.print(f"[dim]Session: {format_duration(session_duration)} | Total: {format_duration(total_run_time)}[/dim]")
+        console.print()
     print_progress_bar(project_dir, prev_passing)
 
     if newly_completed:
@@ -246,11 +249,6 @@ def print_session_progress(
             console.print(f"  [green]✓[/green] {name}")
 
     print_pending_features(project_dir)
-    console.print()
-    if total_run_time is not None:
-        console.print(f"[dim]Session: {format_duration(session_duration)} | Total: {format_duration(total_run_time)}[/dim]")
-    else:
-        console.print(f"[dim]Session time: {format_duration(session_duration)}[/dim]")
 
 
 def print_progress(project_dir: Path) -> None:

@@ -36,7 +36,17 @@ Read the NEW `app_spec.txt` - this contains additional tasks the user wants:
 - Bugs to fix
 - Enhancements to make
 
-### STEP 3: Add New Features to feature_list.json (CRITICAL!)
+### STEP 3: Verify External Service Authentication
+
+If the new task requires additional external services (or if the existing project uses services that need authentication), verify the user is authenticated.
+
+**For each required service:**
+1. Check if the CLI tool is installed
+2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
+3. If NOT authenticated, run the appropriate setup/login command
+4. Document any issues in `claude-progress.txt`
+
+### STEP 4: Add New Features to feature_list.json (CRITICAL!)
 
 **IMPORTANT:** You must preserve ALL existing features and only APPEND new ones.
 
@@ -68,7 +78,7 @@ Read the NEW `app_spec.txt` - this contains additional tasks the user wants:
 - ONLY append new features to the end of the list
 - All new features start with `"passes": false`
 
-### STEP 4: Update app_spec.txt
+### STEP 5: Update app_spec.txt
 
 Merge the new requirements into the existing `app_spec.txt`:
 - Keep the original spec content
@@ -87,14 +97,14 @@ Example:
 [New task requirements...]
 ```
 
-### STEP 5: Update Progress Notes
+### STEP 6: Update Progress Notes
 
 Update `claude-progress.txt` with:
 - Note that new features were added
 - List the new features that need to be implemented
 - Current status (X/Y features complete)
 
-### STEP 6: Commit the Changes
+### STEP 7: Commit the Changes
 
 ```bash
 git add feature_list.json app_spec.txt claude-progress.txt

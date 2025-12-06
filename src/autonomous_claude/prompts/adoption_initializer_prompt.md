@@ -37,7 +37,24 @@ Read `app_spec.txt` - this contains what the user wants to accomplish:
 
 Understand both the existing project AND the new work requested.
 
-### STEP 3: Create feature_list.json (IMPORTANT!)
+### STEP 3: Verify External Service Authentication (CRITICAL)
+
+Based on the existing project's tech stack AND the new task requirements, identify any external services that require CLI authentication.
+
+**Check existing project for services:**
+- Look at `package.json` / `requirements.txt` / `pyproject.toml` dependencies
+- Check for service config files (e.g., `convex/`, `firebase.json`, `fly.toml`, `vercel.json`)
+- Check environment variable files (`.env.example`, `.env.local`)
+
+**For each required service:**
+1. Check if the CLI tool is installed
+2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
+3. If NOT authenticated, run the appropriate setup/login command
+4. Document any services that couldn't be authenticated in `claude-progress.txt`
+
+**IMPORTANT:** Do not proceed if critical services required by the project are not authenticated.
+
+### STEP 4: Create feature_list.json (IMPORTANT!)
 
 Create `feature_list.json` with ONLY the new work to be done.
 
@@ -74,7 +91,7 @@ Create `feature_list.json` with ONLY the new work to be done.
 - Be thorough but focused on what was requested
 - All features start with `"passes": false`
 
-### STEP 4: Create or Update init.sh
+### STEP 5: Create or Update init.sh
 
 Check if `init.sh` exists. If not, create one based on the project's setup:
 
@@ -90,7 +107,7 @@ Create `init.sh` that:
 
 If `init.sh` already exists, review it and update if needed.
 
-### STEP 5: Set Up Puppeteer MCP (for web apps)
+### STEP 6: Set Up Puppeteer MCP (for web apps)
 
 Add to `.mcp.json`:
 ```json
@@ -100,14 +117,14 @@ Add to `.mcp.json`:
 }
 ```
 
-### STEP 6: Update Progress Notes
+### STEP 7: Update Progress Notes
 
 Create `claude-progress.txt` with:
 - Summary of the existing project (tech stack, structure)
 - What tasks are being worked on
 - Initial assessment and approach
 
-### STEP 7: Commit Setup (if git repo)
+### STEP 8: Commit Setup (if git repo)
 
 If this is a git repository:
 ```bash

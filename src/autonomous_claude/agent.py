@@ -217,6 +217,8 @@ def run_agent_loop(
     else:
         ui.print_resuming(project_dir)
 
+    ui.print_separator()
+
     session_count = 0
     total_run_time = 0.0
 
@@ -272,7 +274,7 @@ def run_agent_loop(
             if f.get("passes") and f.get("description") not in before_passing
         ]
 
-        ui.print_session_progress(project_dir, newly_completed, duration, prev_passing, total_run_time)
+        ui.print_session_progress(project_dir, newly_completed, prev_passing, duration, total_run_time)
         ui.print_separator()
 
         # Check completion before waiting for stop signal

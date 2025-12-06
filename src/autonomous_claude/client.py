@@ -9,7 +9,7 @@ from .config import get_config
 
 
 def verify_claude_cli() -> str:
-    """Verify claude CLI is installed and return its path."""
+    """Verify claude CLI is installed and authenticated."""
     claude_path = shutil.which("claude")
     if not claude_path:
         raise RuntimeError(
@@ -17,8 +17,28 @@ def verify_claude_cli() -> str:
             "Install it with:\n"
             "  npm install -g @anthropic-ai/claude-code\n\n"
             "Then authenticate:\n"
-            "  claude login"
+            "  claude"
         )
+
+    # Verify authentication by running a minimal test
+    try:
+        result = subprocess.run(
+            ["claude", "-p", "hi", "--max-turns", "1"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.lower()
+            if "auth" in stderr or "login" in stderr or "token" in stderr:
+                raise RuntimeError(
+                    "Claude Code CLI is not authenticated.\n\n"
+                    "Run 'claude' and complete the login flow."
+                )
+            # Other errors might be transient, just warn
+    except subprocess.TimeoutExpired:
+        pass  # Timeout is fine, CLI is working
+
     return claude_path
 
 
