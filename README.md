@@ -32,53 +32,54 @@ claude login
 
 ## Usage
 
-```
-build [PROJECT_DIR] [SPEC]     Build from description or spec file
-resume [PROJECT_DIR]           Continue existing project
-continue [PROJECT_DIR] [TASK]  Add new features to any project
+```bash
+# cd into your project directory first
+cd my-project
+
+# Start a new project or add features
+autonomous-claude [INSTRUCTIONS]
+
+# Continue work on existing features
+autonomous-claude continue
+
+# Update to latest version
+autonomous-claude update
 ```
 
-All positional arguments are optional — prompts interactively if not provided.
-
-### Build a new app
+### Start a new project
 
 ```bash
-# Interactive - prompts for project name and description
-autonomous-claude build
+# Create and enter project directory
+mkdir notes-app && cd notes-app
 
-# With arguments
-autonomous-claude build ./notes-app "An Apple Notes clone - local .md storage, folders, rich text, search"
+# Interactive - prompts for description
+autonomous-claude
+
+# With description
+autonomous-claude "An Apple Notes clone - local .md storage, folders, rich text, search"
 
 # From a spec file
-autonomous-claude build ./notes-app ./app-spec.md
+autonomous-claude ./app-spec.md
 ```
 
-### Resume an existing project
+### Add features to an existing project
+
+```bash
+cd notes-app
+
+# Add new features
+autonomous-claude "Add dark mode and keyboard shortcuts"
+```
+
+> **Note:** If your project has incomplete features, you'll be asked to confirm. Use `continue` to resume without adding new features.
+
+### Continue work
 
 Continue implementing existing features where you left off:
 
 ```bash
-autonomous-claude resume ./notes-app
-
-# Or interactive
-autonomous-claude resume
-```
-
-### Continue with new features
-
-Add **new** features to any existing project - whether built with this tool or not.
-
-> **Note:** If your project has incomplete features, you'll be asked to confirm. Use `resume` to continue without adding new features.
-
-```bash
-# Interactive
+cd notes-app
 autonomous-claude continue
-
-# Adopt an external project for maintenance
-autonomous-claude continue ./my-nextjs-app "Add dark mode toggle and fix the sidebar collapse bug"
-
-# Add new features to a project built with this tool
-autonomous-claude continue ./notes-app "Add note sharing via public links and real-time collaboration"
 ```
 
 ### Options
@@ -135,24 +136,21 @@ Use `--verbose` (`-V`) to stream Claude's output in real-time instead of showing
 
 ## How It Works
 
-### Building new projects (`build`)
+### New projects
 1. **Session 1 (Initializer)**: Creates `feature_list.json` with testable features
 2. **Sessions 2+ (Coding Agent)**: Implements features one by one, marking them as passing
 
-### Adopting existing projects (`continue`)
-1. **Session 1 (Adoption Initializer)**: Analyzes codebase, creates `feature_list.json` for requested tasks
-2. **Sessions 2+ (Coding Agent)**: Implements the new features
-
-### Adding features to existing projects (`continue` with `feature_list.json`)
+### Adding features to existing projects
 1. **Session 1 (Enhancement Initializer)**: Appends new features to existing `feature_list.json`
 2. **Sessions 2+ (Coding Agent)**: Implements the new features
 
-Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to stop, then `resume` to continue.
+Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to stop, then `continue` to resume.
 
 ## Example
 
 ```bash
-$ autonomous-claude build ./apple-notes-clone "An Apple Notes clone - web app with local .md file storage, folder organization, rich text editing, and full-text search"
+$ mkdir apple-notes-clone && cd apple-notes-clone
+$ autonomous-claude "An Apple Notes clone - web app with local .md file storage, folder organization, rich text editing, and full-text search"
 
 ╔═╗╦ ╦╔╦╗╔═╗╔╗╔╔═╗╔╦╗╔═╗╦ ╦╔═╗
 ╠═╣║ ║ ║ ║ ║║║║║ ║║║║║ ║║ ║╚═╗

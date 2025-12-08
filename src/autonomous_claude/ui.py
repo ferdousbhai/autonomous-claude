@@ -396,4 +396,4 @@ def wait_for_stop_signal(timeout: float = 10.0) -> bool:
 
 def print_user_stopped() -> None:
     """Print message when user stops via keypress."""
-    console.print("[yellow]Stopped by user. Run 'autonomous-claude resume' to continue.[/yellow]")
+    console.print("[yellow]Stopped by user. Run 'autonomous-claude continue' to continue.[/yellow]")

@@ -1,6 +1,7 @@
 """CLI for autonomous-claude."""
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -17,13 +18,13 @@ from .config import get_config
 console = Console()
 
 
-def confirm_app_spec(app_spec: str) -> str:
-    """Display the app spec and ask user to confirm or modify it."""
+def confirm_spec(spec: str, title: str = "Spec") -> str:
+    """Display a spec and ask user to confirm or modify it."""
     while True:
         console.print()
         console.print(Panel(
-            Markdown(app_spec),
-            title="App Spec",
+            Markdown(spec),
+            title=title,
             border_style="dim",
             padding=(1, 2),
         ))
@@ -31,16 +32,18 @@ def confirm_app_spec(app_spec: str) -> str:
         choice = typer.prompt("Accept?", default="y").lower().strip()
 
         if choice in ("y", "yes", ""):
-            return app_spec
+            return spec
         else:
             feedback = choice if len(choice) > 1 else typer.prompt("What needs changing?")
             console.print("[dim]Updating spec...[/dim]")
-            app_spec = generate_app_spec(f"{app_spec}\n\n## Changes Requested\n{feedback}")
+            spec = generate_app_spec(f"{spec}\n\n## Changes Requested\n{feedback}")
+
 
 app = typer.Typer(
     name="autonomous-claude",
     help="Build apps autonomously with Claude Code CLI.",
     add_completion=False,
+    no_args_is_help=False,
 )
 
 
@@ -50,96 +53,167 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-@app.callback()
+def run_default(
+    instructions: Optional[str],
+    model: Optional[str],
+    max_sessions: Optional[int],
+    timeout: Optional[int],
+    verbose: bool,
+):
+    """Run the default command - start new project or add features."""
+    try:
+        verify_claude_cli()
+    except RuntimeError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1)
+
+    project_dir = Path.cwd()
+    feature_list = project_dir / "feature_list.json"
+    has_feature_list = feature_list.exists()
+
+    config = get_config()
+
+    if has_feature_list:
+        # Enhancement mode - adding features to existing project
+        features = json.loads(feature_list.read_text())
+        incomplete = [f for f in features if not f.get("passes", False)]
+
+        if incomplete:
+            console.print(f"[yellow]Warning:[/yellow] This project has {len(incomplete)} incomplete feature(s).")
+            console.print("[dim]Use 'continue' to continue without adding new features.[/dim]")
+            if not typer.confirm("Proceed with adding new features?", default=False):
+                console.print("[dim]Run:[/dim] autonomous-claude continue")
+                raise typer.Exit(0)
+
+        if instructions is None:
+            instructions = typer.prompt("What do you want to add")
+
+        console.print(f"[dim]Adding to project:[/dim] {project_dir}")
+        console.print(f"[dim]Task:[/dim] {instructions}")
+        console.print()
+
+        console.print("[dim]Generating task spec...[/dim]")
+        task_spec = generate_task_spec(instructions)
+        task_spec = confirm_spec(task_spec, title="Task Spec")
+
+        try:
+            run_agent_loop(
+                project_dir=project_dir.resolve(),
+                model=model,
+                max_sessions=max_sessions or config.max_sessions,
+                app_spec=task_spec,
+                timeout=timeout or config.timeout,
+                is_enhancement=True,
+                verbose=verbose,
+            )
+        except KeyboardInterrupt:
+            typer.echo("\n\nInterrupted. Run 'autonomous-claude continue' to continue.")
+            raise typer.Exit(0)
+    else:
+        # New project mode
+        if instructions is None:
+            instructions = typer.prompt("Describe what you want to build")
+
+        # Check if instructions is a file path
+        spec_path = Path(instructions)
+        is_file_spec = spec_path.exists() and spec_path.is_file()
+
+        if is_file_spec:
+            console.print(f"[dim]Reading spec from:[/dim] {spec_path}")
+            app_spec = spec_path.read_text()
+        else:
+            console.print("[dim]Generating spec...[/dim]")
+            app_spec = generate_app_spec(instructions)
+
+        app_spec = confirm_spec(app_spec, title="App Spec")
+
+        try:
+            run_agent_loop(
+                project_dir=project_dir.resolve(),
+                model=model,
+                max_sessions=max_sessions or config.max_sessions,
+                app_spec=app_spec,
+                timeout=timeout or config.timeout,
+                verbose=verbose,
+            )
+        except KeyboardInterrupt:
+            typer.echo("\n\nInterrupted. Run 'autonomous-claude continue' to continue.")
+            raise typer.Exit(0)
+
+
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
+    instructions: Optional[str] = typer.Argument(None, help="What to build or add to the project"),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
+    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
+    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
+    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
     version: bool = typer.Option(
         False, "--version", "-v", callback=version_callback, is_eager=True,
         help="Show version and exit."
     ),
 ):
-    """Build apps autonomously with Claude Code CLI."""
-    pass
+    """Build apps autonomously with Claude Code CLI.
+
+    Run in a project directory to start building or add features.
+
+    Examples:
+        # Start a new project
+        mkdir my-app && cd my-app
+        autonomous-claude "A todo app with local storage"
+
+        # Add features to an existing project
+        cd my-app
+        autonomous-claude "Add dark mode and user authentication"
+
+        # Continue work on existing features
+        cd my-app
+        autonomous-claude continue
+    """
+    # If a subcommand is invoked, don't run the default behavior
+    if ctx.invoked_subcommand is not None:
+        return
+
+    # Handle the case where "continue" or "update" is passed as instructions
+    # This happens because typer parses positional args before subcommands
+    if instructions == "continue":
+        continue_project(model=model, max_sessions=max_sessions, timeout=timeout, verbose=verbose)
+        return
+    if instructions == "update":
+        update()
+        return
+
+    run_default(instructions, model, max_sessions, timeout, verbose)
 
 
-@app.command()
-def build(
-    project_dir: Optional[Path] = typer.Argument(None, help="Project directory"),
-    spec: Optional[str] = typer.Argument(None, help="App description or path to spec file"),
+@app.command(name="continue")
+def continue_project(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
     verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
 ):
-    """Build an app from a description or spec file."""
+    """Continue work on existing features.
+
+    Run in a project directory that has feature_list.json.
+
+    Examples:
+        cd my-app
+        autonomous-claude continue
+    """
     try:
         verify_claude_cli()
     except RuntimeError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
 
-    if project_dir is None:
-        project_name = typer.prompt("Project name")
-        project_dir = Path(project_name)
-
-    if spec is None:
-        spec = typer.prompt("Describe what you want to build")
-
-    spec_path = Path(spec)
-    is_file_spec = spec_path.exists() and spec_path.is_file()
-
-    if is_file_spec:
-        console.print(f"[dim]Reading spec from:[/dim] {spec_path}")
-
-    if is_file_spec:
-        app_spec = spec_path.read_text()
-    else:
-        console.print("[dim]Generating spec...[/dim]")
-        app_spec = generate_app_spec(spec)
-
-    app_spec = confirm_app_spec(app_spec)
-
-    config = get_config()
-    try:
-        run_agent_loop(
-            project_dir=project_dir.resolve(),
-            model=model,
-            max_sessions=max_sessions or config.max_sessions,
-            app_spec=app_spec,
-            timeout=timeout or config.timeout,
-            verbose=verbose,
-        )
-    except KeyboardInterrupt:
-        typer.echo("\n\nInterrupted. Run 'autonomous-claude resume' to continue.")
-        raise typer.Exit(0)
-
-
-@app.command()
-def resume(
-    project_dir: Optional[Path] = typer.Argument(None, help="Project directory to resume"),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
-    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
-    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
-    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
-):
-    """Resume building an existing project."""
-    try:
-        verify_claude_cli()
-    except RuntimeError as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(1)
-
-    if project_dir is None:
-        project_path = typer.prompt("Project directory")
-        project_dir = Path(project_path)
-
-    if not project_dir.exists():
-        typer.echo(f"Error: Project directory not found: {project_dir}", err=True)
-        raise typer.Exit(1)
-
+    project_dir = Path.cwd()
     feature_list = project_dir / "feature_list.json"
+
     if not feature_list.exists():
         typer.echo(f"Error: No feature_list.json found in {project_dir}", err=True)
-        typer.echo("Use 'autonomous-claude build' to start a new project.", err=True)
+        typer.echo("Run 'autonomous-claude \"description\"' to start a new project.", err=True)
         raise typer.Exit(1)
 
     # Check if app_spec.txt exists, prompt for description if not
@@ -150,7 +224,7 @@ def resume(
         description = typer.prompt("Briefly describe this project")
         console.print("[dim]Generating spec...[/dim]")
         app_spec = generate_app_spec(description)
-        app_spec = confirm_app_spec(app_spec)
+        app_spec = confirm_spec(app_spec, title="App Spec")
 
     config = get_config()
     try:
@@ -163,113 +237,28 @@ def resume(
             verbose=verbose,
         )
     except KeyboardInterrupt:
-        typer.echo("\n\nInterrupted. Run this command again to continue.")
+        typer.echo("\n\nInterrupted. Run 'autonomous-claude continue' to continue.")
         raise typer.Exit(0)
 
 
-def confirm_task_spec(task_spec: str) -> str:
-    """Display the task spec and ask user to confirm or modify it."""
-    while True:
-        console.print()
-        console.print(Panel(
-            Markdown(task_spec),
-            title="Task Spec",
-            border_style="dim",
-            padding=(1, 2),
-        ))
-
-        choice = typer.prompt("Accept?", default="y").lower().strip()
-
-        if choice in ("y", "yes", ""):
-            return task_spec
-        else:
-            feedback = choice if len(choice) > 1 else typer.prompt("What needs changing?")
-            console.print("[dim]Updating spec...[/dim]")
-            task_spec = generate_task_spec(f"{task_spec}\n\n## Changes Requested\n{feedback}")
-
-
-@app.command(name="continue")
-def continue_project(
-    project_dir: Optional[Path] = typer.Argument(None, help="Existing project directory"),
-    task: Optional[str] = typer.Argument(None, help="What to work on (feature, bug fix, enhancement)"),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
-    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
-    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
-    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
-):
-    """Continue working on an existing project with new tasks.
-
-    Works with any project - whether built with this tool or not.
-
-    Examples:
-        # Adopt an existing project
-        autonomous-claude continue ./my-app "Add dark mode"
-
-        # Add new features to a project built with this tool
-        autonomous-claude continue ./my-app "Add user authentication"
-    """
+@app.command()
+def update():
+    """Update autonomous-claude to the latest version."""
+    console.print("[dim]Checking for updates...[/dim]")
     try:
-        verify_claude_cli()
-    except RuntimeError as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(1)
-
-    if project_dir is None:
-        project_path = typer.prompt("Project directory")
-        project_dir = Path(project_path)
-
-    if not project_dir.exists():
-        typer.echo(f"Error: Project directory not found: {project_dir}", err=True)
-        raise typer.Exit(1)
-
-    if not project_dir.is_dir():
-        typer.echo(f"Error: {project_dir} is not a directory", err=True)
-        raise typer.Exit(1)
-
-    feature_list = project_dir / "feature_list.json"
-    has_feature_list = feature_list.exists()
-
-    if has_feature_list:
-        # Check for incomplete features and warn user
-        features = json.loads(feature_list.read_text())
-        incomplete = [f for f in features if not f.get("passes", False)]
-
-        if incomplete:
-            console.print(f"[yellow]Warning:[/yellow] This project has {len(incomplete)} incomplete feature(s).")
-            console.print("[dim]Use 'resume' to continue without adding new features.[/dim]")
-            if not typer.confirm("Proceed with adding new features?", default=False):
-                console.print(f"[dim]Run:[/dim] autonomous-claude resume {project_dir}")
-                raise typer.Exit(0)
-
-        console.print(f"[dim]Adding new tasks to:[/dim] {project_dir}")
-    else:
-        console.print(f"[dim]Adopting project:[/dim] {project_dir}")
-
-    if task is None:
-        task = typer.prompt("What do you want to work on")
-
-    console.print(f"[dim]Task:[/dim] {task}")
-    console.print()
-
-    console.print("[dim]Generating task spec...[/dim]")
-    task_spec = generate_task_spec(task)
-    task_spec = confirm_task_spec(task_spec)
-
-    config = get_config()
-    try:
-        run_agent_loop(
-            project_dir=project_dir.resolve(),
-            model=model,
-            max_sessions=max_sessions or config.max_sessions,
-            app_spec=task_spec,
-            timeout=timeout or config.timeout,
-            is_adoption=not has_feature_list,
-            is_enhancement=has_feature_list,
-            verbose=verbose,
+        result = subprocess.run(
+            ["uv", "tool", "upgrade", "autonomous-claude"],
+            capture_output=True,
+            text=True,
         )
-    except KeyboardInterrupt:
-        typer.echo("\n\nInterrupted. Run 'autonomous-claude resume' to continue.")
-        raise typer.Exit(0)
+        if result.returncode == 0:
+            console.print(result.stdout.strip() if result.stdout.strip() else "[green]autonomous-claude is up to date.[/green]")
+        else:
+            typer.echo(f"Error updating: {result.stderr}", err=True)
+            raise typer.Exit(1)
+    except FileNotFoundError:
+        typer.echo("Error: 'uv' is not installed. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh", err=True)
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
