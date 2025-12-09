@@ -30,7 +30,7 @@ Read key files (README, main entry points, config files) to understand:
 
 ### STEP 2: Read the Task Description
 
-Read `app_spec.txt` - this contains what the user wants to accomplish:
+Read `app_spec.md` - this contains what the user wants to accomplish:
 - New features to add
 - Bugs to fix
 - Improvements to make
@@ -128,7 +128,7 @@ Create `claude-progress.txt` with:
 
 If this is a git repository:
 ```bash
-git add feature_list.json app_spec.txt claude-progress.txt init.sh 2>/dev/null
+git add feature_list.json app_spec.md claude-progress.txt init.sh 2>/dev/null
 git commit -m "Set up autonomous-claude for project maintenance
 
 - Added feature_list.json with planned work

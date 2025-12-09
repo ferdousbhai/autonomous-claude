@@ -12,7 +12,7 @@ Read the existing project context:
 ls -la
 
 # 2. Read the original app spec
-cat app_spec.txt
+cat app_spec.md
 
 # 3. Read current feature list
 cat feature_list.json
@@ -31,7 +31,7 @@ Understand:
 
 ### STEP 2: Read the New Task
 
-Read the NEW `app_spec.txt` - this contains additional tasks the user wants:
+Read the NEW `app_spec.md` - this contains additional tasks the user wants:
 - New features to add
 - Bugs to fix
 - Enhancements to make
@@ -51,7 +51,7 @@ If the new task requires additional external services (or if the existing projec
 **IMPORTANT:** You must preserve ALL existing features and only APPEND new ones.
 
 1. Read the current `feature_list.json`
-2. Parse the new tasks from `app_spec.txt`
+2. Parse the new tasks from `app_spec.md`
 3. Create new feature entries for each task
 4. Append them to the existing list
 5. Write the updated list back
@@ -78,9 +78,9 @@ If the new task requires additional external services (or if the existing projec
 - ONLY append new features to the end of the list
 - All new features start with `"passes": false`
 
-### STEP 5: Update app_spec.txt
+### STEP 5: Update app_spec.md
 
-Merge the new requirements into the existing `app_spec.txt`:
+Merge the new requirements into the existing `app_spec.md`:
 - Keep the original spec content
 - Add a new section for the new requirements
 
@@ -107,11 +107,11 @@ Update `claude-progress.txt` with:
 ### STEP 7: Commit the Changes
 
 ```bash
-git add feature_list.json app_spec.txt claude-progress.txt
+git add feature_list.json app_spec.md claude-progress.txt
 git commit -m "Add new features to project
 
 - Added X new features to feature_list.json
-- Updated app_spec.txt with new requirements
+- Updated app_spec.md with new requirements
 - Current status: Y/Z features complete
 "
 ```

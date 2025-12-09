@@ -26,6 +26,6 @@ def get_enhancement_initializer_prompt() -> str:
 
 
 def copy_spec_to_project(project_dir: Path, spec_content: str) -> None:
-    spec_file = project_dir / "app_spec.txt"
+    spec_file = project_dir / "app_spec.md"
     if not spec_file.exists():
         spec_file.write_text(spec_content)

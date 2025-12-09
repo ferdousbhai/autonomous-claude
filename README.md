@@ -14,19 +14,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv tool install autonomous-claude
 ```
 
-Or install from source:
-```bash
-git clone https://github.com/ferdousbhai/autonomous-claude.git
-cd autonomous-claude
-uv tool install .
-```
-
 ### Prerequisites
 
 Claude Code CLI must be installed and authenticated:
 
 ```bash
-npm install -g @anthropic-ai/claude-code
+pnpm add -g @anthropic-ai/claude-code
 claude login
 ```
 
@@ -129,7 +122,7 @@ The tool creates these files in your project:
 | File | Purpose |
 |------|---------|
 | `feature_list.json` | Tracks features and their completion status |
-| `app_spec.txt` | The full application specification |
+| `app_spec.md` | The full application specification |
 | `claude-progress.txt` | Session notes and progress updates |
 | `.autonomous-claude/logs/` | Session logs (stdout, stderr, prompts) |
 

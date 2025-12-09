@@ -5,11 +5,11 @@ Your job is to set up the foundation for all future coding agents.
 
 ### STEP 1: Read the Specification
 
-Read `app_spec.txt` in your working directory. This contains the requirements.
+Read `app_spec.md` in your working directory. This contains the requirements.
 
 ### STEP 2: Verify External Service Authentication (CRITICAL)
 
-Based on the tech stack in `app_spec.txt`, identify any external services that require CLI authentication (e.g., Modal, Convex, Firebase, Supabase, Vercel, AWS, etc.).
+Based on the tech stack in `app_spec.md`, identify any external services that require CLI authentication (e.g., Modal, Convex, Firebase, Supabase, Vercel, AWS, etc.).
 
 **For each required service:**
 1. Check if the CLI tool is installed
@@ -70,7 +70,7 @@ Add to `.mcp.json`:
 
 ### STEP 6: Create Project Structure
 
-Set up the basic directory structure based on the tech stack in `app_spec.txt`.
+Set up the basic directory structure based on the tech stack in `app_spec.md`.
 
 ### STEP 7: Initialize Git
 

@@ -223,11 +223,11 @@ def run_continue(
         typer.echo("Run 'autonomous-claude \"description\"' to start a new project.", err=True)
         raise typer.Exit(1)
 
-    # Check if app_spec.txt exists, prompt for description if not
+    # Check if app_spec.md exists, prompt for description if not
     app_spec = None
-    spec_file = project_dir / "app_spec.txt"
+    spec_file = project_dir / "app_spec.md"
     if not spec_file.exists():
-        console.print("[dim]No app_spec.txt found in project.[/dim]")
+        console.print("[dim]No app_spec.md found in project.[/dim]")
         description = typer.prompt("Briefly describe this project")
         console.print("[dim]Generating spec...[/dim]")
         app_spec = generate_app_spec(description)
