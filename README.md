@@ -40,7 +40,7 @@ cd my-project
 autonomous-claude [INSTRUCTIONS]
 
 # Continue work on existing features
-autonomous-claude continue
+autonomous-claude --continue
 
 # Update to latest version
 autonomous-claude update
@@ -71,7 +71,7 @@ cd notes-app
 autonomous-claude "Add dark mode and keyboard shortcuts"
 ```
 
-> **Note:** If your project has incomplete features, you'll be asked to confirm. Use `continue` to resume without adding new features.
+> **Note:** If your project has incomplete features, you'll be asked to confirm. Use `--continue` to resume without adding new features.
 
 ### Continue work
 
@@ -79,17 +79,18 @@ Continue implementing existing features where you left off:
 
 ```bash
 cd notes-app
-autonomous-claude continue
+autonomous-claude --continue
 ```
 
 ### Options
 
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
+| `--continue` | `-c` | Continue work on existing features | - |
 | `--model` | `-m` | Claude model | Claude Code default |
 | `--max-sessions` | `-n` | Max sessions (Claude Code invocations) | 100 |
 | `--timeout` | `-t` | Timeout per session (seconds) | 18000 (5 hours) |
-| `--verbose` | `-V` | Stream Claude output in real-time | false |
+| `--verbose` | — | Stream Claude output in real-time | false |
 
 ### Configuration
 
@@ -132,7 +133,7 @@ The tool creates these files in your project:
 | `claude-progress.txt` | Session notes and progress updates |
 | `.autonomous-claude/logs/` | Session logs (stdout, stderr, prompts) |
 
-Use `--verbose` (`-V`) to stream Claude's output in real-time instead of showing a spinner.
+Use `--verbose` to stream Claude's output in real-time instead of showing a spinner.
 
 ## How It Works
 
@@ -144,7 +145,7 @@ Use `--verbose` (`-V`) to stream Claude's output in real-time instead of showing
 1. **Session 1 (Enhancement Initializer)**: Appends new features to existing `feature_list.json`
 2. **Sessions 2+ (Coding Agent)**: Implements the new features
 
-Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to stop, then `continue` to resume.
+Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to stop, then `--continue` to resume.
 
 ## Example
 

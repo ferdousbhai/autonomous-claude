@@ -80,9 +80,9 @@ def run_default(
 
         if incomplete:
             console.print(f"[yellow]Warning:[/yellow] This project has {len(incomplete)} incomplete feature(s).")
-            console.print("[dim]Use 'continue' to continue without adding new features.[/dim]")
+            console.print("[dim]Use '--continue' to continue without adding new features.[/dim]")
             if not typer.confirm("Proceed with adding new features?", default=False):
-                console.print("[dim]Run:[/dim] autonomous-claude continue")
+                console.print("[dim]Run:[/dim] autonomous-claude --continue")
                 raise typer.Exit(0)
 
         if instructions is None:
@@ -107,7 +107,7 @@ def run_default(
                 verbose=verbose,
             )
         except KeyboardInterrupt:
-            typer.echo("\n\nInterrupted. Run 'autonomous-claude continue' to continue.")
+            typer.echo("\n\nInterrupted. Run 'autonomous-claude --continue' to continue.")
             raise typer.Exit(0)
     else:
         # New project mode
@@ -137,18 +137,31 @@ def run_default(
                 verbose=verbose,
             )
         except KeyboardInterrupt:
-            typer.echo("\n\nInterrupted. Run 'autonomous-claude continue' to continue.")
+            typer.echo("\n\nInterrupted. Run 'autonomous-claude --continue' to continue.")
             raise typer.Exit(0)
+
+
+def continue_callback(ctx: typer.Context, value: bool):
+    """Handle --continue flag."""
+    if not value:
+        return
+    # Store that we want to continue, will be handled in main
+    ctx.ensure_object(dict)
+    ctx.obj["continue"] = True
 
 
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     instructions: Optional[str] = typer.Argument(None, help="What to build or add to the project"),
+    continue_project_flag: bool = typer.Option(
+        False, "--continue", "-c", callback=continue_callback, is_eager=True,
+        help="Continue work on existing features."
+    ),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
-    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
+    verbose: bool = typer.Option(False, "--verbose", help="Stream Claude output in real-time"),
     version: bool = typer.Option(
         False, "--version", "-v", callback=version_callback, is_eager=True,
         help="Show version and exit."
@@ -169,17 +182,19 @@ def main(
 
         # Continue work on existing features
         cd my-app
-        autonomous-claude continue
+        autonomous-claude --continue
     """
     # If a subcommand is invoked, don't run the default behavior
     if ctx.invoked_subcommand is not None:
         return
 
-    # Handle the case where "continue" or "update" is passed as instructions
-    # This happens because typer parses positional args before subcommands
-    if instructions == "continue":
-        continue_project(model=model, max_sessions=max_sessions, timeout=timeout, verbose=verbose)
+    # Handle --continue flag
+    if continue_project_flag:
+        run_continue(model=model, max_sessions=max_sessions, timeout=timeout, verbose=verbose)
         return
+
+    # Handle the case where "update" is passed as instructions
+    # This happens because typer parses positional args before subcommands
     if instructions == "update":
         update()
         return
@@ -187,21 +202,13 @@ def main(
     run_default(instructions, model, max_sessions, timeout, verbose)
 
 
-@app.command(name="continue")
-def continue_project(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
-    max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
-    timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
-    verbose: bool = typer.Option(False, "--verbose", "-V", help="Stream Claude output in real-time"),
+def run_continue(
+    model: Optional[str],
+    max_sessions: Optional[int],
+    timeout: Optional[int],
+    verbose: bool,
 ):
-    """Continue work on existing features.
-
-    Run in a project directory that has feature_list.json.
-
-    Examples:
-        cd my-app
-        autonomous-claude continue
-    """
+    """Continue work on existing features."""
     try:
         verify_claude_cli()
     except RuntimeError as e:
@@ -237,7 +244,7 @@ def continue_project(
             verbose=verbose,
         )
     except KeyboardInterrupt:
-        typer.echo("\n\nInterrupted. Run 'autonomous-claude continue' to continue.")
+        typer.echo("\n\nInterrupted. Run 'autonomous-claude --continue' to continue.")
         raise typer.Exit(0)
 
 
