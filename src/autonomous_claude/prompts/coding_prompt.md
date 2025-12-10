@@ -79,15 +79,15 @@ After verifying, commit and exit - another session will continue the remaining w
 
 Implement the chosen feature thoroughly:
 1. Write the code (frontend and/or backend as needed)
-2. Test manually using browser automation
+2. Test using the playwright skill
 3. Fix any issues discovered
 4. Verify the feature works end-to-end
 
-### STEP 6: VERIFY WITH BROWSER AUTOMATION
+### STEP 6: VERIFY WITH PLAYWRIGHT
 
-**CRITICAL:** You MUST verify features through the actual UI.
+**CRITICAL:** You MUST verify features through the actual UI using the playwright skill.
 
-- Test through the UI with clicks and keyboard input
+- Use the playwright skill to test through the UI with clicks and keyboard input
 - Take screenshots to verify visual appearance
 - Check for console errors
 - Verify complete user workflows end-to-end
@@ -127,7 +127,7 @@ git add .
 git commit -m "Implement [feature name] - verified end-to-end
 
 - Added [specific changes]
-- Tested with browser automation
+- Tested with playwright
 - Updated feature_list.json: marked test #X as passing
 - Screenshots in verification/ directory
 "
@@ -155,6 +155,10 @@ After you finish implementing and verifying:
 6. **Exit** - another agent session will continue the remaining work
 
 ---
+
+## AVAILABLE SKILLS
+
+Use `frontend-design` for UI work, `playwright-skill` for browser testing, `feature-dev` for features, `code-refactoring` for refactoring.
 
 ## IMPORTANT REMINDERS
 

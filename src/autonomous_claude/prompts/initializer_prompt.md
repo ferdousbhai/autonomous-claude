@@ -58,21 +58,11 @@ Create `init.sh` to set up the dev environment:
 - Start dev servers
 - Print access instructions
 
-### STEP 5: Set Up Puppeteer MCP (for web apps)
-
-Add to `.mcp.json`:
-```json
-"puppeteer-mcp-claude": {
-  "command": "npx",
-  "args": ["-y", "puppeteer-mcp-claude", "serve"]
-}
-```
-
-### STEP 6: Create Project Structure
+### STEP 5: Create Project Structure
 
 Set up the basic directory structure based on the tech stack in `app_spec.md`.
 
-### STEP 7: Initialize Git
+### STEP 6: Initialize Git
 
 ```bash
 git init

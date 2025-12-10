@@ -19,6 +19,39 @@ from . import ui
 
 LOGS_DIR = ".autonomous-claude/logs"
 
+# Claude Code skills to install for coding agents
+CLAUDE_SKILLS = [
+    "@anthropics/claude-code-plugins/frontend-design",
+    "@anthropics/claude-code-plugins/feature-dev",
+    "@wshobson/claude-code-workflows/code-refactoring",
+]
+PLAYWRIGHT_SKILL = "@lackeyjb/playwright-skill/playwright-skill"
+PLAYWRIGHT_SETUP_DIR = Path.home() / ".claude/plugins/marketplaces/lackeyjb/playwright-skill/skills/playwright-skill"
+
+
+def install_claude_skills(project_dir: Path) -> None:
+    """Install Claude Code skills for the coding agents."""
+    # Install standard skills
+    for skill in CLAUDE_SKILLS:
+        subprocess.run(
+            ["npx", "claude-plugins", "install", skill],
+            cwd=project_dir,
+            capture_output=True,
+        )
+
+    # Install playwright skill with setup
+    subprocess.run(
+        ["npx", "claude-plugins", "install", PLAYWRIGHT_SKILL],
+        cwd=project_dir,
+        capture_output=True,
+    )
+    if PLAYWRIGHT_SETUP_DIR.exists():
+        subprocess.run(
+            ["pnpm", "run", "setup"],
+            cwd=PLAYWRIGHT_SETUP_DIR,
+            capture_output=True,
+        )
+
 
 def get_log_path(project_dir: Path, session_type: str) -> Path:
     """Get the log file path for a session."""
@@ -196,9 +229,12 @@ def run_agent_loop(
     if not mcp_json.exists():
         mcp_json.write_text('{\n  "mcpServers": {}\n}\n')
 
-    ui.print_header(project_dir, model)
-
+    # Install Claude Code skills for new projects
     feature_list = project_dir / "feature_list.json"
+    if not feature_list.exists():
+        run_with_spinner(install_claude_skills, project_dir, label="Installing Claude Code skills...")
+
+    ui.print_header(project_dir, model)
 
     # For enhancement mode, we need to run enhancement initializer first
     needs_enhancement_init = is_enhancement

@@ -107,24 +107,14 @@ Create `init.sh` that:
 
 If `init.sh` already exists, review it and update if needed.
 
-### STEP 6: Set Up Puppeteer MCP (for web apps)
-
-Add to `.mcp.json`:
-```json
-"puppeteer-mcp-claude": {
-  "command": "npx",
-  "args": ["-y", "puppeteer-mcp-claude", "serve"]
-}
-```
-
-### STEP 7: Update Progress Notes
+### STEP 6: Update Progress Notes
 
 Create `claude-progress.txt` with:
 - Summary of the existing project (tech stack, structure)
 - What tasks are being worked on
 - Initial assessment and approach
 
-### STEP 8: Commit Setup (if git repo)
+### STEP 7: Commit Setup (if git repo)
 
 If this is a git repository:
 ```bash
