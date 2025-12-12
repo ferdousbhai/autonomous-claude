@@ -41,7 +41,18 @@ ENV PATH="/root/.local/bin:$PATH"
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Use existing node user (uid 1000) and set up directories
-RUN mkdir -p /home/node/.claude /workspace && \
+# Create all directories Claude Code needs to write to
+RUN mkdir -p /home/node/.claude/debug \
+             /home/node/.claude/session-env \
+             /home/node/.claude/todos \
+             /home/node/.claude/file-history \
+             /home/node/.claude/plans \
+             /home/node/.claude/projects \
+             /home/node/.claude/shell-snapshots \
+             /home/node/.claude/statsig \
+             /home/node/.claude/telemetry \
+             /home/node/.claude/ide \
+             /workspace && \
     chown -R node:node /home/node /workspace
 
 # Copy uv to node user
