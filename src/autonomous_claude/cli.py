@@ -59,13 +59,16 @@ def run_default(
     max_sessions: Optional[int],
     timeout: Optional[int],
     verbose: bool,
+    sandbox: bool = True,
 ):
     """Run the default command - start new project or add features."""
-    try:
-        verify_claude_cli()
-    except RuntimeError as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(1)
+    # Only verify host Claude CLI if not using sandbox
+    if not sandbox:
+        try:
+            verify_claude_cli()
+        except RuntimeError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(1)
 
     project_dir = Path.cwd()
     feature_list = project_dir / "feature_list.json"
@@ -105,6 +108,7 @@ def run_default(
                 timeout=timeout or config.timeout,
                 is_enhancement=True,
                 verbose=verbose,
+                sandbox=sandbox,
             )
         except KeyboardInterrupt:
             typer.echo("\n\nInterrupted. Run 'autonomous-claude --continue' to continue.")
@@ -135,28 +139,24 @@ def run_default(
                 app_spec=app_spec,
                 timeout=timeout or config.timeout,
                 verbose=verbose,
+                sandbox=sandbox,
             )
         except KeyboardInterrupt:
             typer.echo("\n\nInterrupted. Run 'autonomous-claude --continue' to continue.")
             raise typer.Exit(0)
 
 
-def continue_callback(ctx: typer.Context, value: bool):
-    """Handle --continue flag."""
-    if not value:
-        return
-    # Store that we want to continue, will be handled in main
-    ctx.ensure_object(dict)
-    ctx.obj["continue"] = True
-
-
 @app.callback(invoke_without_command=True)
 def main(
     ctx: typer.Context,
     instructions: Optional[str] = typer.Argument(None, help="What to build or add to the project"),
-    continue_project_flag: bool = typer.Option(
-        False, "--continue", "-c", callback=continue_callback, is_eager=True,
+    continue_project: bool = typer.Option(
+        False, "--continue", "-c",
         help="Continue work on existing features."
+    ),
+    no_sandbox: bool = typer.Option(
+        False, "--no-sandbox",
+        help="Run without Docker sandbox (not recommended for security)."
     ),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
@@ -170,6 +170,7 @@ def main(
     """Build apps autonomously with Claude Code CLI.
 
     Run in a project directory to start building or add features.
+    By default, runs inside a Docker sandbox for security.
 
     Examples:
         # Start a new project
@@ -183,14 +184,20 @@ def main(
         # Continue work on existing features
         cd my-app
         autonomous-claude --continue
+
+        # Run without sandbox (advanced users only)
+        autonomous-claude --no-sandbox "A simple script"
     """
+    # Determine sandbox mode from CLI flag and config
+    config = get_config()
+    sandbox = config.sandbox_enabled and not no_sandbox
+
     # If a subcommand is invoked, don't run the default behavior
     if ctx.invoked_subcommand is not None:
         return
 
-    # Handle --continue flag
-    if continue_project_flag:
-        run_continue(model=model, max_sessions=max_sessions, timeout=timeout, verbose=verbose)
+    if continue_project:
+        run_continue(model=model, max_sessions=max_sessions, timeout=timeout, verbose=verbose, sandbox=sandbox)
         return
 
     # Handle the case where "update" is passed as instructions
@@ -199,7 +206,7 @@ def main(
         update()
         return
 
-    run_default(instructions, model, max_sessions, timeout, verbose)
+    run_default(instructions, model, max_sessions, timeout, verbose, sandbox=sandbox)
 
 
 def run_continue(
@@ -207,13 +214,16 @@ def run_continue(
     max_sessions: Optional[int],
     timeout: Optional[int],
     verbose: bool,
+    sandbox: bool = True,
 ):
     """Continue work on existing features."""
-    try:
-        verify_claude_cli()
-    except RuntimeError as e:
-        typer.echo(str(e), err=True)
-        raise typer.Exit(1)
+    # Only verify host Claude CLI if not using sandbox
+    if not sandbox:
+        try:
+            verify_claude_cli()
+        except RuntimeError as e:
+            typer.echo(str(e), err=True)
+            raise typer.Exit(1)
 
     project_dir = Path.cwd()
     feature_list = project_dir / "feature_list.json"
@@ -242,6 +252,7 @@ def run_continue(
             app_spec=app_spec,
             timeout=timeout or config.timeout,
             verbose=verbose,
+            sandbox=sandbox,
         )
     except KeyboardInterrupt:
         typer.echo("\n\nInterrupted. Run 'autonomous-claude --continue' to continue.")

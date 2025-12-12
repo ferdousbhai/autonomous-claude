@@ -17,6 +17,10 @@ CONFIG_DIR = Path.home() / ".config" / "autonomous-claude"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
 
 
+# Default Docker image for sandbox
+SANDBOX_IMAGE = "ghcr.io/ferdousbhai/autonomous-claude"
+
+
 @dataclass
 class Config:
     """Configuration for autonomous-claude."""
@@ -31,6 +35,13 @@ class Config:
     allowed_tools: list[str] = field(
         default_factory=lambda: ["Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"]
     )
+
+    # Sandbox settings (Docker isolation)
+    sandbox_enabled: bool = True  # Run in Docker sandbox by default
+    sandbox_memory_limit: str = "8g"  # Container memory limit
+    sandbox_cpu_limit: float = 4.0  # Container CPU limit
+    sandbox_image: str = SANDBOX_IMAGE  # Docker image to use
+    sandbox_tag: str = ""  # Tag to use (empty = use package version)
 
     # UI settings
     pending_display_limit: int = 10  # Max pending features to show
@@ -90,6 +101,20 @@ class Config:
                 config.notification_dings = notif["dings"]
             if "interval" in notif:
                 config.notification_interval = notif["interval"]
+
+        # Sandbox settings
+        if "sandbox" in data:
+            sandbox = data["sandbox"]
+            if "enabled" in sandbox:
+                config.sandbox_enabled = sandbox["enabled"]
+            if "memory_limit" in sandbox:
+                config.sandbox_memory_limit = sandbox["memory_limit"]
+            if "cpu_limit" in sandbox:
+                config.sandbox_cpu_limit = sandbox["cpu_limit"]
+            if "image" in sandbox:
+                config.sandbox_image = sandbox["image"]
+            if "tag" in sandbox:
+                config.sandbox_tag = sandbox["tag"]
 
         return config
 

@@ -179,6 +179,7 @@ def run_session(
     session_type: str = "session",
     spinner_label: str = "Running...",
     verbose: bool = False,
+    sandbox: bool = True,
 ) -> float:
     """Run a single agent session. Returns duration in seconds."""
     import time
@@ -187,7 +188,7 @@ def run_session(
     start_time = time.time()
 
     try:
-        client = ClaudeCLIClient(project_dir=project_dir, model=model, timeout=timeout)
+        client = ClaudeCLIClient(project_dir=project_dir, model=model, timeout=timeout, sandbox=sandbox)
 
         if verbose:
             stdout, stderr = client.query_streaming(prompt)
@@ -221,6 +222,7 @@ def run_agent_loop(
     is_adoption: bool = False,
     is_enhancement: bool = False,
     verbose: bool = False,
+    sandbox: bool = True,
 ) -> None:
     """Run the autonomous agent loop."""
     project_dir.mkdir(parents=True, exist_ok=True)
@@ -291,7 +293,7 @@ def run_agent_loop(
         prev_passing = sum(1 for f in (features_before or []) if f.get("passes"))
 
         print()  # Empty line before spinner
-        duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose)
+        duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose, sandbox)
         total_run_time += duration
 
         # Validate feature_list.json wasn't tampered with

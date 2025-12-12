@@ -16,8 +16,13 @@ uv tool install autonomous-claude
 
 ### Prerequisites
 
-Claude Code CLI must be installed and authenticated:
+**Docker** (for sandboxed execution):
+```bash
+# Install Docker: https://docs.docker.com/get-docker/
+docker --version  # Verify installation
+```
 
+**Claude Code CLI** (only needed for `--no-sandbox` mode):
 ```bash
 pnpm add -g @anthropic-ai/claude-code
 claude login
@@ -80,6 +85,7 @@ autonomous-claude --continue
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
 | `--continue` | `-c` | Continue work on existing features | - |
+| `--no-sandbox` | — | Run without Docker sandbox (not recommended) | false |
 | `--model` | `-m` | Claude model | Claude Code default |
 | `--max-sessions` | `-n` | Max sessions (Claude Code invocations) | 100 |
 | `--timeout` | `-t` | Timeout per session (seconds) | 18000 (5 hours) |
@@ -98,6 +104,11 @@ spec_timeout = 600     # Timeout for spec generation (10 minutes)
 
 [tools]
 allowed = ["Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"]
+
+[sandbox]
+enabled = true         # Run in Docker sandbox (default: true)
+memory_limit = "8g"    # Container memory limit
+cpu_limit = 4.0        # Container CPU limit
 
 [ui]
 pending_display_limit = 10     # Max pending features to show
@@ -158,9 +169,32 @@ Starting new project - initializer will run first
 ...
 ```
 
-## Security Note
+## Security
 
-This tool uses `--dangerously-skip-permissions` for autonomous operation. Only run in trusted environments.
+### Docker Sandbox (Default)
+
+By default, all Claude Code executions run inside an isolated Docker container:
+
+- **Project directory**: Mounted read-write at `/workspace`
+- **Claude auth** (`~/.claude`): Mounted read-only for authentication
+- **Resource limits**: 8GB RAM, 4 CPUs (configurable)
+- **Security hardening**: Runs as non-root, all capabilities dropped
+
+**What is NOT accessible from the sandbox:**
+- `~/.ssh` - SSH keys
+- `~/.aws` - AWS credentials
+- `~/.config` - Other application configs
+- Any directories outside your project
+
+### Running Without Sandbox
+
+Use `--no-sandbox` to run directly on your host system (not recommended):
+
+```bash
+autonomous-claude --no-sandbox "Build something"
+```
+
+This requires Claude Code CLI installed locally and uses `--dangerously-skip-permissions` for autonomous operation. Only use in trusted environments.
 
 ## License
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from .config import get_config
+from .sandbox import DockerSandbox, SandboxConfig, is_docker_available, check_docker_daemon
 
 
 def verify_claude_cli() -> str:
@@ -151,6 +152,7 @@ class ClaudeCLIClient:
         system_prompt: str = "You are an expert full-stack developer building a production-quality web application.",
         max_turns: int | None = None,
         timeout: int | None = None,
+        sandbox: bool = True,
     ):
         config = get_config()
         self.project_dir = project_dir.resolve()
@@ -159,34 +161,89 @@ class ClaudeCLIClient:
         self.max_turns = max_turns or config.max_turns
         self.timeout = timeout or config.timeout
         self.allowed_tools = config.allowed_tools
-        verify_claude_cli()
 
-    def query(self, prompt: str) -> tuple[str, str]:
-        """Send a prompt and return (stdout, stderr)."""
-        self.project_dir.mkdir(parents=True, exist_ok=True)
+        # Determine if we should use sandbox
+        self.sandbox = sandbox and config.sandbox_enabled
 
-        cmd = [
-            "claude", "--print", "--dangerously-skip-permissions",
+        if self.sandbox:
+            # Verify Docker is available
+            if not is_docker_available():
+                raise RuntimeError(
+                    "Docker is required for sandbox mode but is not installed.\n\n"
+                    "Install Docker:\n"
+                    "  https://docs.docker.com/get-docker/\n\n"
+                    "Or run without sandbox (not recommended):\n"
+                    "  autonomous-claude --no-sandbox"
+                )
+
+            success, error = check_docker_daemon()
+            if not success:
+                raise RuntimeError(
+                    f"Docker daemon is not running: {error}\n\n"
+                    "Start Docker and try again, or run without sandbox:\n"
+                    "  autonomous-claude --no-sandbox"
+                )
+
+            # Initialize sandbox
+            sandbox_tag = config.sandbox_tag
+            if not sandbox_tag:
+                # Use package version as tag
+                from . import __version__
+                sandbox_tag = f"v{__version__.split('+')[0]}"
+
+            self._sandbox = DockerSandbox(
+                project_dir=self.project_dir,
+                config=SandboxConfig(
+                    memory_limit=config.sandbox_memory_limit,
+                    cpu_limit=config.sandbox_cpu_limit,
+                    image=config.sandbox_image,
+                    tag=sandbox_tag,
+                ),
+                timeout=self.timeout,
+            )
+        else:
+            # Verify host Claude CLI if not using sandbox
+            verify_claude_cli()
+            self._sandbox = None
+
+    def _build_claude_args(self, prompt: str) -> list[str]:
+        """Build argument list for claude command."""
+        args = [
+            "--print", "--dangerously-skip-permissions",
             "-p", prompt,
             "--max-turns", str(self.max_turns),
         ]
 
         if self.model:
-            cmd.extend(["--model", self.model])
+            args.extend(["--model", self.model])
 
         if self.system_prompt:
-            cmd.extend(["--system-prompt", self.system_prompt])
+            args.extend(["--system-prompt", self.system_prompt])
 
-        cmd.extend(["--allowedTools", ",".join(self.allowed_tools)])
+        args.extend(["--allowedTools", ",".join(self.allowed_tools)])
 
-        result = subprocess.run(
-            cmd,
-            cwd=str(self.project_dir),
-            capture_output=True,
-            text=True,
-            timeout=self.timeout,
-        )
-        return result.stdout, result.stderr
+        return args
+
+    def query(self, prompt: str) -> tuple[str, str]:
+        """Send a prompt and return (stdout, stderr)."""
+        self.project_dir.mkdir(parents=True, exist_ok=True)
+
+        args = self._build_claude_args(prompt)
+
+        if self.sandbox and self._sandbox:
+            # Run in Docker sandbox
+            return self._sandbox.run(args, timeout=self.timeout)
+        else:
+            # Run directly on host
+            cmd = ["claude"] + args
+            result = subprocess.run(
+                cmd,
+                cwd=str(self.project_dir),
+                capture_output=True,
+                text=True,
+                timeout=self.timeout,
+            )
+            return result.stdout, result.stderr
 
     def query_streaming(self, prompt: str) -> tuple[str, str]:
         """Send a prompt and stream output in real-time. Returns (stdout, stderr)."""
@@ -194,28 +251,21 @@ class ClaudeCLIClient:
 
         self.project_dir.mkdir(parents=True, exist_ok=True)
 
-        cmd = [
-            "claude", "--print", "--dangerously-skip-permissions",
-            "-p", prompt,
-            "--max-turns", str(self.max_turns),
-        ]
+        args = self._build_claude_args(prompt)
 
-        if self.model:
-            cmd.extend(["--model", self.model])
-
-        if self.system_prompt:
-            cmd.extend(["--system-prompt", self.system_prompt])
-
-        cmd.extend(["--allowedTools", ",".join(self.allowed_tools)])
-
-        process = subprocess.Popen(
-            cmd,
-            cwd=str(self.project_dir),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-        )
+        if self.sandbox and self._sandbox:
+            process = self._sandbox.run_streaming(args)
+        else:
+            # Run directly on host
+            cmd = ["claude"] + args
+            process = subprocess.Popen(
+                cmd,
+                cwd=str(self.project_dir),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
 
         stdout_lines = []
         stderr_content = ""
