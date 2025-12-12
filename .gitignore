@@ -1,6 +1,9 @@
 # Agent-generated output directories
 generations/
 
+# Node modules (installed by skills at runtime)
+node_modules/
+
 # Log files
 logs/
 

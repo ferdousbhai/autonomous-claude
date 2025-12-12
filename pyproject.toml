@@ -42,7 +42,7 @@ source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/autonomous_claude"]
-artifacts = ["*.md"]
+artifacts = ["*.md", "*.js", "*.json"]
 
 [dependency-groups]
 dev = [

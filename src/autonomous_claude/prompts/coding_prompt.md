@@ -78,24 +78,36 @@ After verifying, commit and exit - another session will continue the remaining w
 ### STEP 5: IMPLEMENT THE FEATURE
 
 Implement the chosen feature thoroughly:
-1. Write the code (frontend and/or backend as needed)
-2. Test using the playwright skill
+1. Write the code
+2. Test the feature
 3. Fix any issues discovered
 4. Verify the feature works end-to-end
 
-### STEP 6: VERIFY WITH PLAYWRIGHT
+### STEP 6: VERIFY THE FEATURE
 
-**CRITICAL:** You MUST verify features through the actual UI using the playwright skill.
+Test the feature appropriately based on the project type:
 
-- Use the playwright skill to test through the UI with clicks and keyboard input
+**For web apps with UI:**
+- Test through the browser UI with clicks and keyboard input
 - Take screenshots to verify visual appearance
 - Check for console errors
 - Verify complete user workflows end-to-end
 
+**For CLI tools:**
+- Run the CLI commands and verify output
+- Test edge cases and error handling
+
+**For backend/API projects:**
+- Test API endpoints with curl or similar
+- Verify response formats and error codes
+
+**For libraries:**
+- Run the test suite
+- Add tests for new functionality
+
 **DON'T:**
-- Only test with curl/API calls (backend testing alone is insufficient)
-- Skip visual verification
-- Mark tests passing without screenshots
+- Skip verification entirely
+- Mark tests passing without actual verification
 
 ### STEP 7: UPDATE feature_list.json (CAREFULLY!)
 
@@ -155,10 +167,6 @@ After you finish implementing and verifying:
 6. **Exit** - another agent session will continue the remaining work
 
 ---
-
-## AVAILABLE SKILLS
-
-Use `frontend-design` for UI work, `playwright-skill` for browser testing, `feature-dev` for features, `code-refactoring` for refactoring.
 
 ## IMPORTANT REMINDERS
 

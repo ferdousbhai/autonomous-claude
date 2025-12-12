@@ -1,8 +1,10 @@
 """Agent loop for autonomous coding sessions."""
 
 import json
+import shutil
 import subprocess
 from datetime import datetime
+from importlib import resources
 from pathlib import Path
 from typing import Any, Optional
 
@@ -18,39 +20,38 @@ from . import ui
 
 
 LOGS_DIR = ".autonomous-claude/logs"
-
-# Claude Code skills to install for coding agents
-CLAUDE_SKILLS = [
-    "@anthropics/claude-code-plugins/frontend-design",
-    "@anthropics/claude-code-plugins/feature-dev",
-    "@wshobson/claude-code-workflows/code-refactoring",
-]
-PLAYWRIGHT_SKILL = "@lackeyjb/playwright-skill/playwright-skill"
-PLAYWRIGHT_SETUP_DIR = Path.home() / ".claude/plugins/marketplaces/lackeyjb/playwright-skill/skills/playwright-skill"
+CLAUDE_SKILLS_DIR = Path.home() / ".claude" / "skills"
 
 
-def install_claude_skills(project_dir: Path) -> None:
-    """Install Claude Code skills for the coding agents."""
-    # Install standard skills
-    for skill in CLAUDE_SKILLS:
-        subprocess.run(
-            ["npx", "claude-plugins", "install", skill],
-            cwd=project_dir,
-            capture_output=True,
-        )
+def install_bundled_skills() -> None:
+    """Install bundled skills to ~/.claude/skills/ if not already present."""
+    CLAUDE_SKILLS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Install playwright skill with setup
-    subprocess.run(
-        ["npx", "claude-plugins", "install", PLAYWRIGHT_SKILL],
-        cwd=project_dir,
-        capture_output=True,
-    )
-    if PLAYWRIGHT_SETUP_DIR.exists():
-        subprocess.run(
-            ["pnpm", "run", "setup"],
-            cwd=PLAYWRIGHT_SETUP_DIR,
-            capture_output=True,
-        )
+    # Get the path to bundled skills
+    with resources.as_file(resources.files("autonomous_claude") / "skills") as skills_src:
+        if not skills_src.exists():
+            return
+
+        for skill_dir in skills_src.iterdir():
+            if not skill_dir.is_dir():
+                continue
+
+            dest_dir = CLAUDE_SKILLS_DIR / skill_dir.name
+            if dest_dir.exists():
+                continue  # Skip if already installed
+
+            # Copy skill directory
+            shutil.copytree(skill_dir, dest_dir)
+
+            # Run setup for playwright-skill
+            if skill_dir.name == "playwright-skill":
+                package_json = dest_dir / "package.json"
+                if package_json.exists():
+                    subprocess.run(
+                        ["pnpm", "run", "setup"],
+                        cwd=dest_dir,
+                        capture_output=True,
+                    )
 
 
 def get_log_path(project_dir: Path, session_type: str) -> Path:
@@ -229,10 +230,10 @@ def run_agent_loop(
     if not mcp_json.exists():
         mcp_json.write_text('{\n  "mcpServers": {}\n}\n')
 
-    # Install Claude Code skills for new projects
+    # Install bundled skills to ~/.claude/skills/
     feature_list = project_dir / "feature_list.json"
     if not feature_list.exists():
-        run_with_spinner(install_claude_skills, project_dir, label="Installing Claude Code skills...")
+        run_with_spinner(install_bundled_skills, label="Installing Claude Code skills...")
 
     ui.print_header(project_dir, model)
 
