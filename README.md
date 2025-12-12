@@ -16,17 +16,19 @@ uv tool install autonomous-claude
 
 ### Prerequisites
 
-**Docker** (for sandboxed execution):
+**Claude Code CLI**:
+```bash
+pnpm add -g @anthropic-ai/claude-code
+claude login
+```
+
+**Docker** - required for secure sandboxed execution:
 ```bash
 # Install Docker: https://docs.docker.com/get-docker/
 docker --version  # Verify installation
 ```
 
-**Claude Code CLI** (only needed for `--no-sandbox` mode):
-```bash
-pnpm add -g @anthropic-ai/claude-code
-claude login
-```
+> By default, Claude runs in a Docker container with access only to your project directory. Use `--no-sandbox` to bypass this isolation (not recommended).
 
 ## Usage
 
@@ -165,7 +167,7 @@ $ autonomous-claude "An Apple Notes clone - web app with local .md file storage,
   Project     /home/user/apple-notes-clone
   Model       Claude Code default
 
-Starting new project - initializer will run first
+Setting up new project...
 ...
 ```
 
@@ -185,16 +187,6 @@ By default, all Claude Code executions run inside an isolated Docker container:
 - `~/.aws` - AWS credentials
 - `~/.config` - Other application configs
 - Any directories outside your project
-
-### Running Without Sandbox
-
-Use `--no-sandbox` to run directly on your host system (not recommended):
-
-```bash
-autonomous-claude --no-sandbox "Build something"
-```
-
-This requires Claude Code CLI installed locally and uses `--dangerously-skip-permissions` for autonomous operation. Only use in trusted environments.
 
 ## License
 

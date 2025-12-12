@@ -100,25 +100,25 @@ def print_header(project_dir: Path, model: str | None) -> None:
 
 
 def print_new_project_notice() -> None:
-    console.print("[yellow]Starting new project - initializer will run first[/yellow]")
-    console.print("[dim]First session may take 5-10 minutes while generating features and project structure.[/dim]")
+    console.print("[yellow]Setting up new project...[/yellow]")
+    console.print("[dim]The first session analyzes your spec and plans the implementation.[/dim]")
     console.print()
 
 
 def print_adoption_notice() -> None:
-    console.print("[yellow]Adopting existing project - analyzing codebase[/yellow]")
-    console.print("[dim]First session will analyze the project and create a feature list for the requested tasks.[/dim]")
+    console.print("[yellow]Analyzing existing project...[/yellow]")
+    console.print("[dim]The first session understands your codebase and plans the new features.[/dim]")
     console.print()
 
 
 def print_enhancement_notice() -> None:
-    console.print("[yellow]Adding new features to existing project[/yellow]")
-    console.print("[dim]First session will add new features to the feature list, then implementation begins.[/dim]")
+    console.print("[yellow]Adding features to project...[/yellow]")
+    console.print("[dim]The first session plans the new features, then implementation begins.[/dim]")
     console.print()
 
 
 def print_resuming(project_dir: Path) -> None:
-    console.print("[green]Resuming existing project[/green]")
+    console.print("[green]Continuing project...[/green]")
     print_progress(project_dir)
 
 
@@ -396,4 +396,4 @@ def wait_for_stop_signal(timeout: float = 10.0) -> bool:
 
 def print_user_stopped() -> None:
     """Print message when user stops via keypress."""
-    console.print("[yellow]Stopped by user. Run 'autonomous-claude continue' to continue.[/yellow]")
+    console.print("[yellow]Stopped. Run 'autonomous-claude --continue' to resume.[/yellow]")
