@@ -282,8 +282,16 @@ def print_complete(
 
 
 def print_output(stdout: str, stderr: str) -> None:
+    from rich.markdown import Markdown
+    from rich.panel import Panel
+
     if stdout:
-        console.print(stdout)
+        console.print(Panel(
+            Markdown(stdout.strip()),
+            title="[bold cyan]Claude[/bold cyan]",
+            border_style="cyan",
+            padding=(1, 2),
+        ))
     if stderr:
         console.print(f"\n[red][stderr]: {stderr}[/red]")
 

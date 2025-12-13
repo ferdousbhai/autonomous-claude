@@ -91,7 +91,6 @@ autonomous-claude --continue
 | `--model` | `-m` | Claude model | Claude Code default |
 | `--max-sessions` | `-n` | Max sessions (Claude Code invocations) | 100 |
 | `--timeout` | `-t` | Timeout per session (seconds) | 18000 (5 hours) |
-| `--verbose` | — | Stream Claude output in real-time | false |
 
 ### Configuration
 
@@ -138,8 +137,6 @@ The tool creates these files in your project:
 | `app_spec.md` | The full application specification |
 | `claude-progress.txt` | Session notes and progress updates |
 | `.autonomous-claude/logs/` | Session logs (stdout, stderr, prompts) |
-
-Use `--verbose` to stream Claude's output in real-time instead of showing a spinner.
 
 ## How It Works
 

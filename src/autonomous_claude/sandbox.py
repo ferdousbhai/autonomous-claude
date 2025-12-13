@@ -208,13 +208,11 @@ class DockerSandbox:
     def _build_docker_command(
         self,
         claude_args: list[str],
-        stream: bool = False,
     ) -> list[str]:
         """Build the docker run command with all mounts and limits.
 
         Args:
             claude_args: Arguments to pass to claude CLI
-            stream: Whether to allocate TTY for streaming output
 
         Returns:
             Complete docker command as list of strings
@@ -223,11 +221,7 @@ class DockerSandbox:
             "docker",
             "run",
             "--rm",  # Clean up container after exit
-            "-i",  # Interactive for stdin
         ]
-
-        if stream:
-            cmd.append("-t")  # Allocate TTY for streaming
 
         # Resource limits
         cmd.extend(
@@ -284,9 +278,8 @@ class DockerSandbox:
             ]
         )
 
-        # Image and command
+        # Image and arguments (entrypoint is "claude" in the image)
         cmd.append(f"{self.config.image}:{self.config.tag}")
-        cmd.append("claude")
         cmd.extend(claude_args)
 
         return cmd
@@ -313,7 +306,7 @@ class DockerSandbox:
         self.verify_docker()
         self.ensure_image()
 
-        cmd = self._build_docker_command(claude_args, stream=False)
+        cmd = self._build_docker_command(claude_args)
 
         result = subprocess.run(
             cmd,
@@ -324,28 +317,3 @@ class DockerSandbox:
 
         return result.stdout, result.stderr
 
-    def run_streaming(self, claude_args: list[str]) -> subprocess.Popen:
-        """Execute claude command with streaming output.
-
-        Args:
-            claude_args: Arguments to pass to claude CLI
-
-        Returns:
-            Popen process object for streaming
-
-        Raises:
-            DockerNotFoundError: If Docker is not installed
-            DockerDaemonError: If Docker daemon is not running
-        """
-        self.verify_docker()
-        self.ensure_image()
-
-        cmd = self._build_docker_command(claude_args, stream=True)
-
-        return subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,  # Line buffered for real-time output
-        )

@@ -58,7 +58,6 @@ def run_default(
     model: Optional[str],
     max_sessions: Optional[int],
     timeout: Optional[int],
-    verbose: bool,
     sandbox: bool = True,
 ):
     """Run the default command - start new project or add features."""
@@ -107,7 +106,6 @@ def run_default(
                 app_spec=task_spec,
                 timeout=timeout or config.timeout,
                 is_enhancement=True,
-                verbose=verbose,
                 sandbox=sandbox,
             )
         except KeyboardInterrupt:
@@ -138,7 +136,6 @@ def run_default(
                 max_sessions=max_sessions or config.max_sessions,
                 app_spec=app_spec,
                 timeout=timeout or config.timeout,
-                verbose=verbose,
                 sandbox=sandbox,
             )
         except KeyboardInterrupt:
@@ -161,7 +158,6 @@ def main(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Claude model (default: Claude Code's configured model)"),
     max_sessions: Optional[int] = typer.Option(None, "--max-sessions", "-n", help="Max sessions (Claude Code invocations)"),
     timeout: Optional[int] = typer.Option(None, "--timeout", "-t", help="Timeout per session (seconds)"),
-    verbose: bool = typer.Option(False, "--verbose", help="Stream Claude output in real-time"),
     version: bool = typer.Option(
         False, "--version", "-v", callback=version_callback, is_eager=True,
         help="Show version and exit."
@@ -197,7 +193,7 @@ def main(
         return
 
     if continue_project:
-        run_continue(model=model, max_sessions=max_sessions, timeout=timeout, verbose=verbose, sandbox=sandbox)
+        run_continue(model=model, max_sessions=max_sessions, timeout=timeout, sandbox=sandbox)
         return
 
     # Handle the case where "update" is passed as instructions
@@ -206,14 +202,13 @@ def main(
         update()
         return
 
-    run_default(instructions, model, max_sessions, timeout, verbose, sandbox=sandbox)
+    run_default(instructions, model, max_sessions, timeout, sandbox=sandbox)
 
 
 def run_continue(
     model: Optional[str],
     max_sessions: Optional[int],
     timeout: Optional[int],
-    verbose: bool,
     sandbox: bool = True,
 ):
     """Continue work on existing features."""
@@ -251,7 +246,6 @@ def run_continue(
             max_sessions=max_sessions or config.max_sessions,
             app_spec=app_spec,
             timeout=timeout or config.timeout,
-            verbose=verbose,
             sandbox=sandbox,
         )
     except KeyboardInterrupt:

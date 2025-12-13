@@ -178,7 +178,6 @@ def run_session(
     timeout: int = 1800,
     session_type: str = "session",
     spinner_label: str = "Running...",
-    verbose: bool = False,
     sandbox: bool = True,
 ) -> float:
     """Run a single agent session. Returns duration in seconds."""
@@ -189,17 +188,11 @@ def run_session(
 
     try:
         client = ClaudeCLIClient(project_dir=project_dir, model=model, timeout=timeout, sandbox=sandbox)
-
-        if verbose:
-            stdout, stderr = client.query_streaming(prompt)
-        else:
-            stdout, stderr = run_with_spinner(client.query, prompt, label=spinner_label)
+        stdout, stderr = run_with_spinner(client.query, prompt, label=spinner_label)
 
         duration = time.time() - start_time
         write_session_log(log_path, session_type, prompt, stdout, stderr, duration)
-
-        if not verbose:
-            ui.print_output(stdout, stderr)
+        ui.print_output(stdout, stderr)
 
     except subprocess.TimeoutExpired:
         duration = time.time() - start_time
@@ -221,7 +214,6 @@ def run_agent_loop(
     timeout: int = 1800,
     is_adoption: bool = False,
     is_enhancement: bool = False,
-    verbose: bool = False,
     sandbox: bool = True,
 ) -> None:
     """Run the autonomous agent loop."""
@@ -293,7 +285,7 @@ def run_agent_loop(
         prev_passing = sum(1 for f in (features_before or []) if f.get("passes"))
 
         print()  # Empty line before spinner
-        duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, verbose, sandbox)
+        duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, sandbox)
         total_run_time += duration
 
         # Validate feature_list.json wasn't tampered with
