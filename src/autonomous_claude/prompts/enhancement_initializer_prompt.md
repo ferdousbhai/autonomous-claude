@@ -36,7 +36,7 @@ Read the NEW `app_spec.md` - this contains additional tasks the user wants:
 - Bugs to fix
 - Enhancements to make
 
-### STEP 3: Verify External Service Authentication
+### STEP 3: Verify External Service Authentication & Handle Missing Credentials
 
 If the new task requires additional external services (or if the existing project uses services that need authentication), verify the user is authenticated.
 
@@ -45,6 +45,39 @@ If the new task requires additional external services (or if the existing projec
 2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
 3. If NOT authenticated, run the appropriate setup/login command
 4. Document any issues in `claude-progress.txt`
+
+**Handling Missing API Keys, Environment Variables, and Endpoints:**
+
+If you cannot authenticate a service, don't have access to required API keys/env variables, or need to call external endpoints that aren't available:
+
+1. **Use mock data** - Use `faker.js` (Node.js) or `Faker` (Python) to generate realistic mock data
+2. **Mock external API endpoints** - Use `msw` (frontend), `nock` (Node.js), or `responses` (Python) to mock third-party APIs
+3. **Create placeholder env vars** - Set up `.env` files with clearly marked placeholder values
+4. **Update HUMAN.md** - Create/update `HUMAN.md` with tasks requiring human action:
+
+```markdown
+# Human Tasks Required Before Production
+
+## Environment Variables to Configure
+
+- [ ] `API_KEY_NAME` - Get from [service dashboard URL]
+
+## External API Endpoints to Configure
+
+- [ ] `THIRD_PARTY_API_URL` - Currently mocked, configure real endpoint
+- [ ] Webhook URL for [Service] - Register production URL with the service
+
+## Services to Authenticate
+
+- [ ] ServiceName - Run `service-cli login` and configure
+
+## Other Manual Tasks
+
+- [ ] Review mock data and replace with real values
+- [ ] Remove or disable mock mode for production
+```
+
+You may proceed with mock data/endpoints if services aren't available.
 
 ### STEP 4: Add New Features to feature_list.json (CRITICAL!)
 

@@ -116,9 +116,12 @@ def run_default(
         if instructions is None:
             instructions = typer.prompt("Describe what you want to build")
 
-        # Check if instructions is a file path
-        spec_path = Path(instructions)
-        is_file_spec = spec_path.exists() and spec_path.is_file()
+        # Check if instructions is a file path (guard against invalid paths)
+        try:
+            spec_path = Path(instructions)
+            is_file_spec = spec_path.exists() and spec_path.is_file()
+        except OSError:
+            is_file_spec = False
 
         if is_file_spec:
             console.print(f"[dim]Reading spec from:[/dim] {spec_path}")

@@ -192,6 +192,31 @@ After you finish implementing and verifying:
 - Search the web to find the best modern libraries for common tasks (date handling, validation, HTTP requests, etc.)
 - Don't reinvent the wheel - leverage the ecosystem
 
+**Handling Missing API Keys, Environment Variables, and Endpoints:**
+
+If you encounter missing API keys, environment variables, or unavailable external endpoints during implementation:
+
+1. **Use mock data** - Use `faker.js` (Node.js) or `Faker` (Python) to generate realistic mock data
+2. **Mock external API endpoints** - Use `msw` (frontend), `nock` (Node.js), or `responses` (Python) to mock third-party APIs
+3. **Set placeholder env vars** - Use clearly marked placeholder values:
+   ```
+   # TODO: Replace with real API key before production
+   SERVICE_API_KEY=mock_key_replace_before_production
+   EXTERNAL_API_URL=http://localhost:3001/mock-api
+   ```
+4. **Update HUMAN.md** - Add any new human tasks discovered during implementation:
+   ```markdown
+   ## Environment Variables to Configure
+
+   - [ ] `NEW_SERVICE_API_KEY` - Get from [service dashboard URL]
+
+   ## External API Endpoints to Configure
+
+   - [ ] `THIRD_PARTY_API_URL` - Currently mocked, configure real endpoint
+   ```
+
+The app must remain functional for development/testing even without real API keys or endpoints.
+
 ---
 
 Begin by running Step 1 (Get Your Bearings).

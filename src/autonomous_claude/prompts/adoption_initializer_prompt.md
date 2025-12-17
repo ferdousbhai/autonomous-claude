@@ -37,7 +37,7 @@ Read `app_spec.md` - this contains what the user wants to accomplish:
 
 Understand both the existing project AND the new work requested.
 
-### STEP 3: Verify External Service Authentication (CRITICAL)
+### STEP 3: Verify External Service Authentication & Handle Missing Credentials (CRITICAL)
 
 Based on the existing project's tech stack AND the new task requirements, identify any external services that require CLI authentication.
 
@@ -52,7 +52,48 @@ Based on the existing project's tech stack AND the new task requirements, identi
 3. If NOT authenticated, run the appropriate setup/login command
 4. Document any services that couldn't be authenticated in `claude-progress.txt`
 
-**IMPORTANT:** Do not proceed if critical services required by the project are not authenticated.
+**Handling Missing API Keys, Environment Variables, and Endpoints:**
+
+If you cannot authenticate a service, don't have access to required API keys/env variables, or need to call external endpoints that aren't available:
+
+1. **Use mock data** - Use `faker.js` (Node.js) or `Faker` (Python) to generate realistic mock data
+2. **Create placeholder env vars** - Set up `.env` files with clearly marked placeholder values:
+   ```
+   # TODO: Replace with real API key before production
+   SERVICE_API_KEY=mock_key_replace_before_production
+   EXTERNAL_API_URL=http://localhost:3001/mock-api
+   ```
+3. **Mock external API endpoints** - Use `msw` (frontend), `nock` (Node.js), or `responses` (Python) to mock third-party APIs
+4. **Create HUMAN.md** - Document all tasks requiring human action before production:
+
+```markdown
+# Human Tasks Required Before Production
+
+This file tracks tasks that require human action (API keys, credentials, manual setup).
+
+## Environment Variables to Configure
+
+- [ ] `API_KEY_NAME` - Get from [service dashboard URL]
+- [ ] `DATABASE_URL` - Set up production database and add connection string
+
+## External API Endpoints to Configure
+
+- [ ] `PAYMENT_API_URL` - Currently mocked, replace with production payment gateway URL
+- [ ] `THIRD_PARTY_API_URL` - Sign up and configure real endpoint
+- [ ] Webhook URL for [Service] - Register your production URL with the service
+
+## Services to Authenticate
+
+- [ ] ServiceName - Run `service-cli login` and configure project
+
+## Other Manual Tasks
+
+- [ ] Review and update mock data with real values
+- [ ] Set up production environment variables
+- [ ] Remove or disable mock mode for production
+```
+
+**IMPORTANT:** You may proceed with mock data/endpoints if services aren't available. The app should be functional for development/testing with mocks.
 
 ### STEP 4: Create feature_list.json (IMPORTANT!)
 
