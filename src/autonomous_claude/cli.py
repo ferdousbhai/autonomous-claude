@@ -258,18 +258,46 @@ def run_continue(
 
 @app.command()
 def update():
-    """Update autonomous-claude to the latest version."""
+    """Update autonomous-claude to the latest version from PyPI."""
+    import urllib.request
+    import json
+
     console.print("[dim]Checking for updates...[/dim]")
+
+    # Get current version
+    current_version = __version__
+
+    # Get latest version from PyPI
+    try:
+        with urllib.request.urlopen(
+            "https://pypi.org/pypi/autonomous-claude/json", timeout=10
+        ) as response:
+            data = json.loads(response.read().decode())
+            latest_version = data["info"]["version"]
+    except Exception as e:
+        console.print(f"[red]Error checking PyPI: {e}[/red]")
+        raise typer.Exit(1)
+
+    # Compare versions (strip any dev/local suffixes for comparison)
+    current_base = current_version.split(".dev")[0].split("+")[0]
+
+    if current_base == latest_version:
+        console.print(f"[green]autonomous-claude {latest_version} is the latest version.[/green]")
+        return
+
+    console.print(f"[yellow]Current: {current_version} → Latest: {latest_version}[/yellow]")
+    console.print("[dim]Updating...[/dim]")
+
     try:
         result = subprocess.run(
-            ["uv", "tool", "upgrade", "autonomous-claude"],
+            ["uv", "tool", "install", "--force", "autonomous-claude"],
             capture_output=True,
             text=True,
         )
         if result.returncode == 0:
-            console.print(result.stdout.strip() if result.stdout.strip() else "[green]autonomous-claude is up to date.[/green]")
+            console.print(f"[green]Updated to {latest_version}[/green]")
         else:
-            typer.echo(f"Error updating: {result.stderr}", err=True)
+            console.print(f"[red]Error updating: {result.stderr}[/red]")
             raise typer.Exit(1)
     except FileNotFoundError:
         typer.echo("Error: 'uv' is not installed. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh", err=True)
