@@ -262,10 +262,9 @@ def update():
     import urllib.request
     import json
 
-    console.print("[dim]Checking for updates...[/dim]")
-
-    # Get current version
     current_version = __version__
+    console.print(f"Current version: {current_version}")
+    console.print("Checking for updates...")
 
     # Get latest version from PyPI
     try:
@@ -282,11 +281,10 @@ def update():
     current_base = current_version.split(".dev")[0].split("+")[0]
 
     if current_base == latest_version:
-        console.print(f"[green]autonomous-claude {latest_version} is the latest version.[/green]")
+        console.print(f"autonomous-claude is up to date ({latest_version})")
         return
 
-    console.print(f"[yellow]Current: {current_version} → Latest: {latest_version}[/yellow]")
-    console.print("[dim]Updating...[/dim]")
+    console.print(f"Updating {current_version} → {latest_version}...")
 
     try:
         result = subprocess.run(
@@ -295,7 +293,7 @@ def update():
             text=True,
         )
         if result.returncode == 0:
-            console.print(f"[green]Updated to {latest_version}[/green]")
+            console.print(f"Updated to {latest_version}")
         else:
             console.print(f"[red]Error updating: {result.stderr}[/red]")
             raise typer.Exit(1)
