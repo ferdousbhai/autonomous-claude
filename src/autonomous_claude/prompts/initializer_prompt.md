@@ -5,17 +5,17 @@ Your job is to set up the foundation for all future coding agents.
 
 ### STEP 1: Read the Specification
 
-Read `app_spec.md` in your working directory. This contains the requirements.
+Read `.autonomous-claude/spec.md` in your working directory. This contains the requirements.
 
 ### STEP 2: Verify External Service Authentication & Handle Missing Credentials
 
-Based on the tech stack in `app_spec.md`, identify any external services that require CLI authentication (e.g., Modal, Convex, Firebase, Supabase, Vercel, AWS, etc.) or API keys.
+Based on the tech stack in `.autonomous-claude/spec.md`, identify any external services that require CLI authentication (e.g., Modal, Convex, Firebase, Supabase, Vercel, AWS, etc.) or API keys.
 
 **For each required service:**
 1. Check if the CLI tool is installed
 2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
 3. If NOT authenticated, run the appropriate setup/login command
-4. Document any services that couldn't be authenticated in `claude-progress.txt`
+4. Document any services that couldn't be authenticated in `.autonomous-claude/progress.txt`
 
 **Handling Missing API Keys, Environment Variables, and Endpoints (CRITICAL):**
 
@@ -32,9 +32,9 @@ If you cannot authenticate a service, don't have access to required API keys/env
    - Use libraries like `msw` (Mock Service Worker) for frontend, `nock` for Node.js, or `responses` for Python
    - Create a `/mocks` or `/fixtures` directory with mock response data
    - Implement conditional logic to use mocks in development: `if (process.env.USE_MOCKS) { ... }`
-4. **Document in HUMAN.md** - Create/update `HUMAN.md` file with all tasks requiring human action
+4. **Document in TODO.md** - Create/update `TODO.md` file with all tasks requiring human action
 
-**HUMAN.md Format:**
+**TODO.md Format:**
 ```markdown
 # Human Tasks Required Before Production
 
@@ -64,9 +64,9 @@ This file tracks tasks that require human action (API keys, credentials, manual 
 
 **IMPORTANT:** You may proceed with project setup using mock data/endpoints if services aren't available. The app should be functional for development/testing with mocks.
 
-### STEP 3: Create feature_list.json
+### STEP 3: Create features.json
 
-Create `feature_list.json` with testable features based on the spec's complexity.
+Create `.autonomous-claude/features.json` with testable features based on the spec's complexity.
 Use your judgment: a simple app might need 20-30 features, a complex one might need 100+.
 
 **Format:**
@@ -105,7 +105,7 @@ Create `init.sh` to set up the dev environment:
 
 ### STEP 5: Create Project Structure
 
-Set up the basic directory structure based on the tech stack in `app_spec.md`.
+Set up the basic directory structure based on the tech stack in `.autonomous-claude/spec.md`.
 
 ### STEP 6: Initialize Git
 

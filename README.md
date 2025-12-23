@@ -133,22 +133,24 @@ The tool creates these files in your project:
 
 | File | Purpose |
 |------|---------|
-| `feature_list.json` | Tracks features and their completion status |
-| `app_spec.md` | The full application specification |
-| `claude-progress.txt` | Session notes and progress updates |
+| `.autonomous-claude/features.json` | Tracks features and their completion status |
+| `.autonomous-claude/spec.md` | The full application specification |
+| `.autonomous-claude/progress.txt` | Session notes and progress updates |
 | `.autonomous-claude/logs/` | Session logs (stdout, stderr, prompts) |
+| `init.sh` | Dev environment setup script |
+| `TODO.md` | Human tasks (API keys, credentials) - only if needed |
 
 ## How It Works
 
 ### New projects
-1. **Session 1 (Initializer)**: Creates `feature_list.json` with testable features
+1. **Session 1 (Initializer)**: Creates `.autonomous-claude/features.json` with testable features
 2. **Sessions 2+ (Coding Agent)**: Implements features one by one, marking them as passing
 
 ### Adding features to existing projects
-1. **Session 1 (Enhancement Initializer)**: Appends new features to existing `feature_list.json`
+1. **Session 1 (Enhancement Initializer)**: Appends new features to existing `features.json`
 2. **Sessions 2+ (Coding Agent)**: Implements the new features
 
-Progress is persisted via `feature_list.json` and git commits. Press `Ctrl+C` to stop, then `--continue` to resume.
+Progress is persisted via `.autonomous-claude/features.json` and git commits. Press `Ctrl+C` to stop, then `--continue` to resume.
 
 ## Example
 

@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from .config import get_config
+from .config import get_config, FEATURES_FILE
 
 # UI constants
 FEATURE_NAME_MAX_LENGTH = 500
@@ -123,8 +123,8 @@ def print_resuming(project_dir: Path) -> None:
 
 
 def get_progress_stats(project_dir: Path) -> tuple[int, int]:
-    """Return (passing_count, total_count) from feature_list.json."""
-    feature_list = project_dir / "feature_list.json"
+    """Return (passing_count, total_count) from features.json."""
+    feature_list = project_dir / FEATURES_FILE
     if not feature_list.exists():
         return 0, 0
     try:
@@ -137,8 +137,8 @@ def get_progress_stats(project_dir: Path) -> tuple[int, int]:
 
 
 def get_features(project_dir: Path) -> list[dict]:
-    """Return all features from feature_list.json."""
-    feature_list = project_dir / "feature_list.json"
+    """Return all features from features.json."""
+    feature_list = project_dir / FEATURES_FILE
     if not feature_list.exists():
         return []
     try:

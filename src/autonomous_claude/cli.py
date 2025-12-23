@@ -13,7 +13,7 @@ from rich.panel import Panel
 from . import __version__
 from .agent import run_agent_loop
 from .client import generate_app_spec, generate_task_spec, verify_claude_cli
-from .config import get_config
+from .config import get_config, FEATURES_FILE, SPEC_FILE
 
 console = Console()
 
@@ -70,7 +70,7 @@ def run_default(
             raise typer.Exit(1)
 
     project_dir = Path.cwd()
-    feature_list = project_dir / "feature_list.json"
+    feature_list = project_dir / FEATURES_FILE
     has_feature_list = feature_list.exists()
 
     config = get_config()
@@ -224,18 +224,18 @@ def run_continue(
             raise typer.Exit(1)
 
     project_dir = Path.cwd()
-    feature_list = project_dir / "feature_list.json"
+    feature_list = project_dir / FEATURES_FILE
 
     if not feature_list.exists():
-        typer.echo(f"Error: No feature_list.json found in {project_dir}", err=True)
+        typer.echo(f"Error: No features.json found in {project_dir}", err=True)
         typer.echo("Run 'autonomous-claude \"description\"' to start a new project.", err=True)
         raise typer.Exit(1)
 
-    # Check if app_spec.md exists, prompt for description if not
+    # Check if spec.md exists, prompt for description if not
     app_spec = None
-    spec_file = project_dir / "app_spec.md"
+    spec_file = project_dir / SPEC_FILE
     if not spec_file.exists():
-        console.print("[dim]No app_spec.md found in project.[/dim]")
+        console.print("[dim]No spec.md found in project.[/dim]")
         description = typer.prompt("Briefly describe this project")
         console.print("[dim]Generating spec...[/dim]")
         app_spec = generate_app_spec(description)

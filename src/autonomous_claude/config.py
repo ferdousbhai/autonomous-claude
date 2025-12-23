@@ -16,6 +16,12 @@ else:
 CONFIG_DIR = Path.home() / ".config" / "autonomous-claude"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
 
+# Project file paths (relative to project directory)
+AUTONOMOUS_CLAUDE_DIR = ".autonomous-claude"
+FEATURES_FILE = f"{AUTONOMOUS_CLAUDE_DIR}/features.json"
+SPEC_FILE = f"{AUTONOMOUS_CLAUDE_DIR}/spec.md"
+PROGRESS_FILE = f"{AUTONOMOUS_CLAUDE_DIR}/progress.txt"
+LOGS_DIR = f"{AUTONOMOUS_CLAUDE_DIR}/logs"
 
 # Default Docker image for sandbox
 SANDBOX_IMAGE = "ghcr.io/ferdousbhai/autonomous-claude"

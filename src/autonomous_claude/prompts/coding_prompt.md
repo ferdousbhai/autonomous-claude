@@ -15,22 +15,22 @@ pwd
 ls -la
 
 # 3. Read the project specification to understand what you're building
-cat app_spec.md
+cat .autonomous-claude/spec.md
 
 # 4. Read the feature list to see all work
-cat feature_list.json | head -50
+cat .autonomous-claude/features.json | head -50
 
 # 5. Read progress notes from previous sessions
-cat claude-progress.txt
+cat .autonomous-claude/progress.txt
 
 # 6. Check recent git history
 git log --oneline -20
 
 # 7. Count remaining tests
-cat feature_list.json | grep '"passes": false' | wc -l
+cat .autonomous-claude/features.json | grep '"passes": false' | wc -l
 ```
 
-Understanding the `app_spec.md` is critical - it contains the full requirements
+Understanding the `.autonomous-claude/spec.md` is critical - it contains the full requirements
 for the application you're building.
 
 ### STEP 2: START SERVERS (IF NOT RUNNING)
@@ -70,7 +70,7 @@ For example, if this were a chat app, you should perform a test that logs into t
 
 ### STEP 4: CHOOSE FEATURE(S) TO IMPLEMENT
 
-Look at feature_list.json and find the highest-priority feature with "passes": false.
+Look at `.autonomous-claude/features.json` and find the highest-priority feature with "passes": false.
 
 Focus on completing a feature (or small set of related features) this session.
 After verifying, commit and exit - another session will continue the remaining work.
@@ -109,7 +109,7 @@ Test the feature appropriately based on the project type:
 - Skip verification entirely
 - Mark tests passing without actual verification
 
-### STEP 7: UPDATE feature_list.json (CAREFULLY!)
+### STEP 7: UPDATE features.json (CAREFULLY!)
 
 **YOU CAN ONLY MODIFY ONE FIELD: "passes"**
 
@@ -131,6 +131,8 @@ to:
 
 **ONLY CHANGE "passes" FIELD AFTER VERIFICATION WITH SCREENSHOTS.**
 
+Note: The features file is at `.autonomous-claude/features.json`.
+
 ### STEP 8: COMMIT YOUR PROGRESS
 
 Make a descriptive git commit:
@@ -140,14 +142,14 @@ git commit -m "Implement [feature name] - verified end-to-end
 
 - Added [specific changes]
 - Tested with playwright
-- Updated feature_list.json: marked test #X as passing
+- Updated features.json: marked test #X as passing
 - Screenshots in verification/ directory
 "
 ```
 
 ### STEP 9: UPDATE PROGRESS NOTES
 
-Update `claude-progress.txt` with:
+Update `.autonomous-claude/progress.txt` with:
 - What you accomplished this session
 - Which test(s) you completed
 - Any issues discovered or fixed
@@ -160,8 +162,8 @@ Update `claude-progress.txt` with:
 
 After you finish implementing and verifying:
 1. Commit all working code
-2. Update claude-progress.txt
-3. Update feature_list.json if tests verified
+2. Update `.autonomous-claude/progress.txt`
+3. Update `.autonomous-claude/features.json` if tests verified
 4. Ensure no uncommitted changes
 5. Leave app in working state (no broken features)
 6. **Exit** - another agent session will continue the remaining work
@@ -178,7 +180,7 @@ After you finish implementing and verifying:
 
 **Quality Bar:**
 - Zero console errors
-- Polished UI matching the design specified in app_spec.md
+- Polished UI matching the design specified in `.autonomous-claude/spec.md`
 - All features work end-to-end through the UI
 - Fast, responsive, professional
 
@@ -204,7 +206,7 @@ If you encounter missing API keys, environment variables, or unavailable externa
    SERVICE_API_KEY=mock_key_replace_before_production
    EXTERNAL_API_URL=http://localhost:3001/mock-api
    ```
-4. **Update HUMAN.md** - Add any new human tasks discovered during implementation:
+4. **Update TODO.md** - Add any new human tasks discovered during implementation:
    ```markdown
    ## Environment Variables to Configure
 

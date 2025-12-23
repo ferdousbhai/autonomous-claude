@@ -17,9 +17,9 @@ from .prompts import (
     copy_spec_to_project,
 )
 from . import ui
+from .config import AUTONOMOUS_CLAUDE_DIR, LOGS_DIR, FEATURES_FILE, SPEC_FILE, PROGRESS_FILE
 
 
-LOGS_DIR = ".autonomous-claude/logs"
 CLAUDE_SKILLS_DIR = Path.home() / ".claude" / "skills"
 
 
@@ -116,8 +116,8 @@ def run_with_spinner(func, *args, label: str = "Running...", **kwargs):
 
 
 def is_project_complete(project_dir: Path) -> bool:
-    """Check if all features in feature_list.json are passing."""
-    feature_list = project_dir / "feature_list.json"
+    """Check if all features in features.json are passing."""
+    feature_list = project_dir / FEATURES_FILE
     if not feature_list.exists():
         return False
 
@@ -129,8 +129,8 @@ def is_project_complete(project_dir: Path) -> bool:
 
 
 def load_features(project_dir: Path) -> list[dict] | None:
-    """Load feature_list.json, return None if doesn't exist or invalid."""
-    feature_list = project_dir / "feature_list.json"
+    """Load features.json, return None if doesn't exist or invalid."""
+    feature_list = project_dir / FEATURES_FILE
     if not feature_list.exists():
         return None
     try:
@@ -141,7 +141,7 @@ def load_features(project_dir: Path) -> list[dict] | None:
 
 def validate_feature_changes(before: list[dict] | None, after: list[dict] | None) -> tuple[bool, str]:
     """
-    Validate that feature_list.json changes follow the rules:
+    Validate that features.json changes follow the rules:
     - Features cannot be removed
     - Feature descriptions cannot be modified
 
@@ -151,7 +151,7 @@ def validate_feature_changes(before: list[dict] | None, after: list[dict] | None
         return True, ""  # First creation is always valid
 
     if after is None:
-        return False, "feature_list.json was deleted or corrupted"
+        return False, "features.json was deleted or corrupted"
 
     # Check for removed features (description changed = feature removed + new one added)
     before_descriptions = {f.get("description", "") for f in before}
@@ -166,8 +166,8 @@ def validate_feature_changes(before: list[dict] | None, after: list[dict] | None
 
 
 def save_features(project_dir: Path, features: list[dict]) -> None:
-    """Save features back to feature_list.json."""
-    feature_list = project_dir / "feature_list.json"
+    """Save features back to features.json."""
+    feature_list = project_dir / FEATURES_FILE
     feature_list.write_text(json.dumps(features, indent=2))
 
 
@@ -225,7 +225,7 @@ def run_agent_loop(
         mcp_json.write_text('{\n  "mcpServers": {}\n}\n')
 
     # Install bundled skills to ~/.claude/skills/
-    feature_list = project_dir / "feature_list.json"
+    feature_list = project_dir / FEATURES_FILE
     if not feature_list.exists():
         run_with_spinner(install_bundled_skills, label="Installing Claude Code skills...")
 
@@ -288,13 +288,13 @@ def run_agent_loop(
         duration = run_session(project_dir, model, prompt, timeout, session_type, spinner_label, sandbox)
         total_run_time += duration
 
-        # Validate feature_list.json wasn't tampered with
+        # Validate features.json wasn't tampered with
         features_after = load_features(project_dir)
         is_valid, error = validate_feature_changes(features_before, features_after)
         if not is_valid:
-            ui.print_warning(f"Invalid feature_list.json change: {error}")
+            ui.print_warning(f"Invalid features.json change: {error}")
             if features_before is not None:
-                ui.print_warning("Restoring previous feature_list.json")
+                ui.print_warning("Restoring previous features.json")
                 save_features(project_dir, features_before)
                 features_after = features_before  # Use restored for display
 

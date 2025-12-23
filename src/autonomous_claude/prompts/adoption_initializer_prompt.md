@@ -30,7 +30,7 @@ Read key files (README, main entry points, config files) to understand:
 
 ### STEP 2: Read the Task Description
 
-Read `app_spec.md` - this contains what the user wants to accomplish:
+Read `.autonomous-claude/spec.md` - this contains what the user wants to accomplish:
 - New features to add
 - Bugs to fix
 - Improvements to make
@@ -50,7 +50,7 @@ Based on the existing project's tech stack AND the new task requirements, identi
 1. Check if the CLI tool is installed
 2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
 3. If NOT authenticated, run the appropriate setup/login command
-4. Document any services that couldn't be authenticated in `claude-progress.txt`
+4. Document any services that couldn't be authenticated in `.autonomous-claude/progress.txt`
 
 **Handling Missing API Keys, Environment Variables, and Endpoints:**
 
@@ -64,7 +64,7 @@ If you cannot authenticate a service, don't have access to required API keys/env
    EXTERNAL_API_URL=http://localhost:3001/mock-api
    ```
 3. **Mock external API endpoints** - Use `msw` (frontend), `nock` (Node.js), or `responses` (Python) to mock third-party APIs
-4. **Create HUMAN.md** - Document all tasks requiring human action before production:
+4. **Create TODO.md** - Document all tasks requiring human action before production:
 
 ```markdown
 # Human Tasks Required Before Production
@@ -95,9 +95,9 @@ This file tracks tasks that require human action (API keys, credentials, manual 
 
 **IMPORTANT:** You may proceed with mock data/endpoints if services aren't available. The app should be functional for development/testing with mocks.
 
-### STEP 4: Create feature_list.json (IMPORTANT!)
+### STEP 4: Create features.json (IMPORTANT!)
 
-Create `feature_list.json` with ONLY the new work to be done.
+Create `.autonomous-claude/features.json` with ONLY the new work to be done.
 
 **DO NOT** try to catalog existing features as passing - focus only on the task at hand.
 
@@ -150,7 +150,7 @@ If `init.sh` already exists, review it and update if needed.
 
 ### STEP 6: Update Progress Notes
 
-Create `claude-progress.txt` with:
+Create `.autonomous-claude/progress.txt` with:
 - Summary of the existing project (tech stack, structure)
 - What tasks are being worked on
 - Initial assessment and approach
@@ -159,10 +159,10 @@ Create `claude-progress.txt` with:
 
 If this is a git repository:
 ```bash
-git add feature_list.json app_spec.md claude-progress.txt init.sh 2>/dev/null
+git add .autonomous-claude/ init.sh 2>/dev/null
 git commit -m "Set up autonomous-claude for project maintenance
 
-- Added feature_list.json with planned work
+- Added features.json with planned work
 - Created init.sh for dev environment
 - Added progress tracking
 "

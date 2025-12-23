@@ -1,7 +1,7 @@
 ## YOUR ROLE - ENHANCEMENT INITIALIZER AGENT
 
 You are adding NEW features to an existing project that was built with autonomous-claude.
-The project already has a `feature_list.json` - you will ADD new features to it.
+The project already has a `.autonomous-claude/features.json` - you will ADD new features to it.
 
 ### STEP 1: Understand the Current Project
 
@@ -12,13 +12,13 @@ Read the existing project context:
 ls -la
 
 # 2. Read the original app spec
-cat app_spec.md
+cat .autonomous-claude/spec.md
 
 # 3. Read current feature list
-cat feature_list.json
+cat .autonomous-claude/features.json
 
 # 4. Read progress notes
-cat claude-progress.txt 2>/dev/null || echo "No progress file yet"
+cat .autonomous-claude/progress.txt 2>/dev/null || echo "No progress file yet"
 
 # 5. Check recent git history
 git log --oneline -10
@@ -31,7 +31,7 @@ Understand:
 
 ### STEP 2: Read the New Task
 
-Read the NEW `app_spec.md` - this contains additional tasks the user wants:
+Read the NEW `.autonomous-claude/spec.md` - this contains additional tasks the user wants:
 - New features to add
 - Bugs to fix
 - Enhancements to make
@@ -44,7 +44,7 @@ If the new task requires additional external services (or if the existing projec
 1. Check if the CLI tool is installed
 2. Verify the user is authenticated (most CLIs have a `whoami`, `auth status`, or `config show` command)
 3. If NOT authenticated, run the appropriate setup/login command
-4. Document any issues in `claude-progress.txt`
+4. Document any issues in `.autonomous-claude/progress.txt`
 
 **Handling Missing API Keys, Environment Variables, and Endpoints:**
 
@@ -53,7 +53,7 @@ If you cannot authenticate a service, don't have access to required API keys/env
 1. **Use mock data** - Use `faker.js` (Node.js) or `Faker` (Python) to generate realistic mock data
 2. **Mock external API endpoints** - Use `msw` (frontend), `nock` (Node.js), or `responses` (Python) to mock third-party APIs
 3. **Create placeholder env vars** - Set up `.env` files with clearly marked placeholder values
-4. **Update HUMAN.md** - Create/update `HUMAN.md` with tasks requiring human action:
+4. **Update TODO.md** - Create/update `TODO.md` with tasks requiring human action:
 
 ```markdown
 # Human Tasks Required Before Production
@@ -79,12 +79,12 @@ If you cannot authenticate a service, don't have access to required API keys/env
 
 You may proceed with mock data/endpoints if services aren't available.
 
-### STEP 4: Add New Features to feature_list.json (CRITICAL!)
+### STEP 4: Add New Features to features.json (CRITICAL!)
 
 **IMPORTANT:** You must preserve ALL existing features and only APPEND new ones.
 
-1. Read the current `feature_list.json`
-2. Parse the new tasks from `app_spec.md`
+1. Read the current `.autonomous-claude/features.json`
+2. Parse the new tasks from `.autonomous-claude/spec.md`
 3. Create new feature entries for each task
 4. Append them to the existing list
 5. Write the updated list back
@@ -111,9 +111,9 @@ You may proceed with mock data/endpoints if services aren't available.
 - ONLY append new features to the end of the list
 - All new features start with `"passes": false`
 
-### STEP 5: Update app_spec.md
+### STEP 5: Update spec.md
 
-Merge the new requirements into the existing `app_spec.md`:
+Merge the new requirements into the existing `.autonomous-claude/spec.md`:
 - Keep the original spec content
 - Add a new section for the new requirements
 
@@ -132,7 +132,7 @@ Example:
 
 ### STEP 6: Update Progress Notes
 
-Update `claude-progress.txt` with:
+Update `.autonomous-claude/progress.txt` with:
 - Note that new features were added
 - List the new features that need to be implemented
 - Current status (X/Y features complete)
@@ -140,11 +140,11 @@ Update `claude-progress.txt` with:
 ### STEP 7: Commit the Changes
 
 ```bash
-git add feature_list.json app_spec.md claude-progress.txt
+git add .autonomous-claude/
 git commit -m "Add new features to project
 
-- Added X new features to feature_list.json
-- Updated app_spec.md with new requirements
+- Added X new features to features.json
+- Updated spec.md with new requirements
 - Current status: Y/Z features complete
 "
 ```
