@@ -235,12 +235,12 @@ class DockerSandbox:
         # 1. Project directory (read-write)
         cmd.extend(["-v", f"{self.project_dir}:/workspace:rw"])
 
-        # 2. Claude credentials (read-only) - only mount auth file, not entire dir
+        # 2. Claude credentials (read-write for token refresh)
         # Claude Code needs to write to ~/.claude/debug, session-env, todos, etc.
         credentials_file = self.claude_dir / ".credentials.json"
         if credentials_file.exists():
             cmd.extend(
-                ["-v", f"{credentials_file}:/home/node/.claude/.credentials.json:ro"]
+                ["-v", f"{credentials_file}:/home/node/.claude/.credentials.json:rw"]
             )
 
         # 3. Claude settings (read-only) - for user preferences
