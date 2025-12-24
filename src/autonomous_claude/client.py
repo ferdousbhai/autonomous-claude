@@ -3,143 +3,87 @@
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from .config import get_config
 from .sandbox import DockerSandbox, SandboxConfig, is_docker_available, check_docker_daemon
 
 
 def verify_claude_cli() -> str:
-    """Verify claude CLI is installed and authenticated."""
-    claude_path = shutil.which("claude")
-    if not claude_path:
+    """Verify claude CLI is installed."""
+    path = shutil.which("claude")
+    if not path:
         raise RuntimeError(
             "Claude Code CLI not found.\n\n"
-            "Install it with:\n"
-            "  npm install -g @anthropic-ai/claude-code\n\n"
-            "Then authenticate:\n"
-            "  claude"
+            "Install: npm install -g @anthropic-ai/claude-code\n"
+            "Then run: claude"
         )
-
-    # Verify authentication by running a minimal test
-    try:
-        result = subprocess.run(
-            ["claude", "-p", "hi", "--max-turns", "1"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode != 0:
-            stderr = result.stderr.lower()
-            if "auth" in stderr or "login" in stderr or "token" in stderr:
-                raise RuntimeError(
-                    "Claude Code CLI is not authenticated.\n\n"
-                    "Run 'claude' and complete the login flow."
-                )
-            # Other errors might be transient, just warn
-    except subprocess.TimeoutExpired:
-        pass  # Timeout is fine, CLI is working
-
-    return claude_path
+    return path
 
 
-def generate_app_spec(description: str, timeout: int | None = None) -> str:
-    """Generate a detailed app spec using Claude."""
+_DOCS_PROMPT = "\n\nCheck for *.md files that might contain relevant context and incorporate useful information."
+
+
+def generate_app_spec(description: str, project_dir: Path | None = None, timeout: int | None = None) -> str:
+    """Generate application specification. Uses file tools if project_dir provided."""
     verify_claude_cli()
-    config = get_config()
-    timeout = timeout or config.spec_timeout
+    timeout = timeout or get_config().spec_timeout
+    docs = _DOCS_PROMPT if project_dir else ""
 
-    prompt = f"""Write a concise application specification for:
-
-"{description}"
-
-Format as markdown with these sections:
+    prompt = f'''Write a concise application specification for: "{description}"
+{docs}
+Format:
 # <App Name>
 
 ## Overview
-One paragraph describing what this app does and who it's for.
+One paragraph.
 
 ## Core Features
 - Feature 1: Brief description
-- Feature 2: Brief description
-(3-6 key features)
+(3-6 features)
 
 ## Tech Stack
-Recommend appropriate technologies for this type of app.
+Appropriate technologies.
 
-Keep it focused and actionable. Output only the spec, no preamble."""
+Output only the spec.'''
 
-    result = subprocess.run(
-        ["claude", "--print", "-p", prompt],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+    cmd = ["claude", "--print", "-p", prompt]
+    if project_dir:
+        cmd.extend(["--dangerously-skip-permissions", "--allowedTools", "Read,Glob", "--max-turns", "10"])
 
-    spec = result.stdout.strip()
-    if not spec:
-        return f"""# Application
-
-## Overview
-{description}
-
-## Core Features
-- Build a complete, production-quality implementation
-
-## Tech Stack
-- Choose appropriate technologies based on requirements
-"""
-    return spec
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                           cwd=str(project_dir) if project_dir else None)
+    return result.stdout.strip() or f"# Application\n\n## Overview\n{description}"
 
 
-def generate_task_spec(task: str, timeout: int | None = None) -> str:
-    """Generate a task spec using Claude."""
+def generate_task_spec(task: str, project_dir: Path | None = None, timeout: int | None = None) -> str:
+    """Generate task specification for enhancements. Uses file tools if project_dir provided."""
     verify_claude_cli()
-    config = get_config()
-    timeout = timeout or config.spec_timeout
+    timeout = timeout or get_config().spec_timeout
+    docs = _DOCS_PROMPT if project_dir else ""
 
-    prompt = f"""Write a concise task specification for an existing project:
-
-"{task}"
-
-Format as markdown:
+    prompt = f'''Write a concise task specification for: "{task}"
+{docs}
+Format:
 # Task: <Brief Title>
 
 ## Overview
-One paragraph describing what needs to be done.
+One paragraph.
 
 ## Requirements
-- Requirement 1
-- Requirement 2
-(key requirements)
+- Key requirements
 
 ## Guidelines
-- Follow existing code patterns
-- Maintain backwards compatibility
+- Follow existing patterns
 
-Keep it focused. Output only the spec, no preamble."""
+Output only the spec.'''
 
-    result = subprocess.run(
-        ["claude", "--print", "-p", prompt],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+    cmd = ["claude", "--print", "-p", prompt]
+    if project_dir:
+        cmd.extend(["--dangerously-skip-permissions", "--allowedTools", "Read,Glob", "--max-turns", "10"])
 
-    spec = result.stdout.strip()
-    if not spec:
-        return f"""# Task
-
-## Overview
-{task}
-
-## Requirements
-- Complete the task as described
-
-## Guidelines
-- Follow existing code patterns
-"""
-    return spec
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                           cwd=str(project_dir) if project_dir else None)
+    return result.stdout.strip() or f"# Task\n\n## Overview\n{task}"
 
 
 class ClaudeCLIClient:
@@ -148,8 +92,8 @@ class ClaudeCLIClient:
     def __init__(
         self,
         project_dir: Path,
-        model: Optional[str] = None,
-        system_prompt: str = "You are an expert full-stack developer building a production-quality web application.",
+        model: str | None = None,
+        system_prompt: str = "You are an expert full-stack developer.",
         max_turns: int | None = None,
         timeout: int | None = None,
         sandbox: bool = True,
@@ -161,35 +105,19 @@ class ClaudeCLIClient:
         self.max_turns = max_turns or config.max_turns
         self.timeout = timeout or config.timeout
         self.allowed_tools = config.allowed_tools
-
-        # Determine if we should use sandbox
         self.sandbox = sandbox and config.sandbox_enabled
+        self._sandbox = None
 
         if self.sandbox:
-            # Verify Docker is available
             if not is_docker_available():
-                raise RuntimeError(
-                    "Docker is required for sandbox mode but is not installed.\n\n"
-                    "Install Docker:\n"
-                    "  https://docs.docker.com/get-docker/\n\n"
-                    "Or run without sandbox (not recommended):\n"
-                    "  autonomous-claude --no-sandbox"
-                )
+                raise RuntimeError("Docker required for sandbox. Install Docker or use --no-sandbox")
 
-            success, error = check_docker_daemon()
-            if not success:
-                raise RuntimeError(
-                    f"Docker daemon is not running: {error}\n\n"
-                    "Start Docker and try again, or run without sandbox:\n"
-                    "  autonomous-claude --no-sandbox"
-                )
+            ok, err = check_docker_daemon()
+            if not ok:
+                raise RuntimeError(f"Docker daemon not running: {err}")
 
-            # Initialize sandbox
-            sandbox_tag = config.sandbox_tag
-            if not sandbox_tag:
-                # Use package version as tag
-                from . import __version__
-                sandbox_tag = f"v{__version__.split('+')[0]}"
+            from . import __version__
+            tag = config.sandbox_tag or f"v{__version__.split('+')[0]}"
 
             self._sandbox = DockerSandbox(
                 project_dir=self.project_dir,
@@ -197,50 +125,30 @@ class ClaudeCLIClient:
                     memory_limit=config.sandbox_memory_limit,
                     cpu_limit=config.sandbox_cpu_limit,
                     image=config.sandbox_image,
-                    tag=sandbox_tag,
+                    tag=tag,
                 ),
                 timeout=self.timeout,
             )
         else:
-            # Verify host Claude CLI if not using sandbox
             verify_claude_cli()
-            self._sandbox = None
 
-    def _build_claude_args(self, prompt: str) -> list[str]:
-        """Build argument list for claude command."""
-        args = [
-            "--print", "--dangerously-skip-permissions",
-            "-p", prompt,
-            "--max-turns", str(self.max_turns),
-        ]
-
+    def _build_args(self, prompt: str) -> list[str]:
+        args = ["--print", "--dangerously-skip-permissions", "-p", prompt, "--max-turns", str(self.max_turns)]
         if self.model:
             args.extend(["--model", self.model])
-
         if self.system_prompt:
             args.extend(["--system-prompt", self.system_prompt])
-
         args.extend(["--allowedTools", ",".join(self.allowed_tools)])
-
         return args
 
     def query(self, prompt: str) -> tuple[str, str]:
-        """Send a prompt and return (stdout, stderr)."""
+        """Send prompt, return (stdout, stderr)."""
         self.project_dir.mkdir(parents=True, exist_ok=True)
+        args = self._build_args(prompt)
 
-        args = self._build_claude_args(prompt)
-
-        if self.sandbox and self._sandbox:
-            # Run in Docker sandbox
+        if self._sandbox:
             return self._sandbox.run(args, timeout=self.timeout)
-        else:
-            # Run directly on host
-            cmd = ["claude"] + args
-            result = subprocess.run(
-                cmd,
-                cwd=str(self.project_dir),
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-            )
-            return result.stdout, result.stderr
+
+        result = subprocess.run(["claude"] + args, cwd=str(self.project_dir),
+                               capture_output=True, text=True, timeout=self.timeout)
+        return result.stdout, result.stderr
