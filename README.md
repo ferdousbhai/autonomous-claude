@@ -174,18 +174,21 @@ Setting up new project...
 
 ### Docker Sandbox (Default)
 
-By default, all Claude Code executions run inside an isolated Docker container:
+By default, all Claude Code executions run inside an isolated Docker container.
 
-- **Project directory**: Mounted read-write at `/workspace`
-- **Claude auth** (`~/.claude`): Mounted read-only for authentication
-- **Resource limits**: 8GB RAM, 4 CPUs (configurable)
-- **Security hardening**: Runs as non-root, all capabilities dropped
+**Mounts:**
+| Host Path | Container Path | Mode | Why |
+|-----------|---------------|------|-----|
+| Project directory | `/workspace` | rw | Code being built |
+| `~/.claude/.credentials.json` | `/home/node/.claude/.credentials.json` | rw | Auth tokens (needs write for refresh) |
+| `~/.claude/settings.json` | `/home/node/.claude/settings.json` | ro | User preferences |
+| `~/.claude/settings.local.json` | `/home/node/.claude/settings.local.json` | ro | Permission allowlists |
 
-**What is NOT accessible from the sandbox:**
-- `~/.ssh` - SSH keys
-- `~/.aws` - AWS credentials
-- `~/.config` - Other application configs
-- Any directories outside your project
+Settings are read-only to prevent a sandboxed session from escalating permissions for future sessions.
+
+**Not accessible:** `~/.ssh`, `~/.aws`, `~/.config`, or any directory outside your project.
+
+**Limits:** 8GB RAM, 4 CPUs (configurable). Runs as non-root with all capabilities dropped.
 
 ## License
 

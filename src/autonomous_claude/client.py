@@ -48,7 +48,7 @@ Output only the spec.'''
 
     cmd = ["claude", "--print", "-p", prompt]
     if project_dir:
-        cmd.extend(["--dangerously-skip-permissions", "--allowedTools", "Read,Glob", "--max-turns", "10"])
+        cmd.extend(["--dangerously-skip-permissions", "--allowedTools", "Read,Glob"])
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            cwd=str(project_dir) if project_dir else None)
@@ -79,7 +79,7 @@ Output only the spec.'''
 
     cmd = ["claude", "--print", "-p", prompt]
     if project_dir:
-        cmd.extend(["--dangerously-skip-permissions", "--allowedTools", "Read,Glob", "--max-turns", "10"])
+        cmd.extend(["--dangerously-skip-permissions", "--allowedTools", "Read,Glob"])
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            cwd=str(project_dir) if project_dir else None)

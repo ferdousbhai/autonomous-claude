@@ -28,7 +28,7 @@ class Config:
     timeout: int = 18000
     max_turns: int = 2000
     max_sessions: int = 100
-    spec_timeout: int = 600
+    spec_timeout: int = 1800
     allowed_tools: list[str] = field(
         default_factory=lambda: ["Read", "Write", "Edit", "MultiEdit", "Glob", "Grep", "Bash", "WebSearch", "WebFetch"]
     )
